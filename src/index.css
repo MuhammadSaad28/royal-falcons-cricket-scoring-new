@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-cricket;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-cricket-green hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-cricket-blue hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-accent {
+    @apply bg-cricket-orange hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cricket-green focus:border-transparent;
+  }
+  
+  .nav-link {
+    @apply text-gray-600 hover:text-cricket-green transition-colors duration-200;
+  }
+  
+  .nav-link-active {
+    @apply text-cricket-green font-medium;
+  }
+}
+
+/* OBS Overlay specific styles */
+.overlay-mode {
+  background: transparent !important;
+}
+
+.overlay-mode .card {
+  @apply bg-black bg-opacity-80 text-white border-gray-600;
+}
+
+/* Loading animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
