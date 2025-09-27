@@ -29,143 +29,225 @@ const OverlayMode = () => {
   }, [matchId]);
 
   if (!match) {
-    return (
-      <div className="overlay-mode min-h-screen flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading match data...</p>
-        </div>
-      </div>
-    );
+    return null; // Don't show loading for overlay
   }
 
+  const currentBatting = match.currentInning === 1 ? 'teamA' : 'teamB';
+  const currentBowling = match.currentInning === 1 ? 'teamB' : 'teamA';
+  
+  // Dynamic data with fallbacks to static
+  const battingTeam = currentBatting === 'teamA' ? match.teamA : match.teamB;
+  const bowlingTeam = currentBatting === 'teamA' ? match.teamB : match.teamA;
+  
+  const currentScore = match.currentScore?.[currentBatting] || 0;
+  const currentWickets = match.currentScore?.[`wickets${currentBatting.charAt(currentBatting.length - 1).toUpperCase()}`] || 0;
+  const currentOvers = match.stats?.[currentBatting]?.overs || '0.0';
+  const currentExtras = match.stats?.[currentBatting]?.extras || 0;
+  
+  // Current batsmen (dynamic when available, static fallback)
+  const striker = match.currentBatsmen?.striker || { name: "M. Babar", runs: 47, balls: 35, fours: 4, sixes: 1, sr: 134.29 };
+  const nonStriker = match.currentBatsmen?.nonStriker || { name: "F. Zaman", runs: 23, balls: 18, fours: 2, sixes: 0, sr: 127.78 };
+  
+  // Current bowler (dynamic when available, static fallback)
+  const bowler = match.currentBowler || { name: "S. Afridi", overs: "3.2", maidens: 0, runs: 28, wickets: 1, economy: 8.40 };
+  
+  // Recent balls
+  const recentBalls = match.recentBalls || ['1', '4', '0', 'W', '2', '6'];
+  
+  // Target info
+  const target = match.target;
+  const required = target ? (target - currentScore) : null;
+  const ballsLeft = match.ballsLeft;
+  const requiredRate = required && ballsLeft ? ((required / ballsLeft) * 6).toFixed(2) : null;
+
   return (
-    <div className="overlay-mode min-h-screen p-4 font-cricket">
-      {/* Connection Status */}
+    <div className="overlay-mode fixed bottom-0 left-0 right-0 z-50 font-mono">
+      {/* Connection Status - Top Right */}
       <div className="fixed top-4 right-4 z-10">
         {connected ? (
-          <Wifi className="h-6 w-6 text-green-400" />
+          <Wifi className="h-5 w-5 text-green-400" />
         ) : (
-          <WifiOff className="h-6 w-6 text-red-400" />
+          <WifiOff className="h-5 w-5 text-red-400" />
         )}
       </div>
 
-      {/* Main Score Display */}
-      <div className="max-w-4xl mx-auto">
-        {/* Match Title */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-2">
-            <Trophy className="h-8 w-8 text-yellow-400 mr-2" />
-            <h1 className="text-3xl font-bold text-white">
-              {match.teamA} vs {match.teamB}
-            </h1>
+      {/* Main Scorecard */}
+      <div className="bg-gradient-to-r from-black/95 to-gray-900/95 backdrop-blur-md border-t-4 border-red-600">
+        <div className="px-6 py-3">
+          
+          {/* Top Row - Match Info */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Trophy className="h-5 w-5 text-yellow-400" />
+                <span className="text-white font-bold text-lg">
+                  {match.teamA} vs {match.teamB}
+                </span>
+              </div>
+              {match.status === 'live' && (
+                <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
+                  ● LIVE
+                </div>
+              )}
+              <div className="text-gray-300 text-sm">
+                {match.venue} • {match.overs} overs
+              </div>
+            </div>
+            
+            {/* Target Info */}
+            {target && (
+              <div className="text-right">
+                <div className="text-white text-sm">
+                  Target: <span className="font-bold text-red-400">{target}</span>
+                </div>
+                {required !== null && (
+                  <div className="text-gray-300 text-xs">
+                    Need {required} from {ballsLeft} balls • RR: {requiredRate}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div className="text-gray-300">
-            {match.venue} • {match.overs} overs
+
+          {/* Main Score Row */}
+          <div className="grid grid-cols-12 gap-4 items-center mb-3">
+            
+            {/* Team Score */}
+            <div className="col-span-3">
+              <div className="bg-blue-900/50 rounded-lg p-3 text-center border border-blue-800">
+                <div className="text-white font-bold text-sm mb-1">{battingTeam}</div>
+                <div className="text-white text-2xl font-bold">
+                  {currentScore}
+                  <span className="text-lg text-red-400">/{currentWickets}</span>
+                </div>
+                <div className="text-gray-300 text-sm">
+                  ({currentOvers} ov)
+                  {currentExtras > 0 && (
+                    <span className="text-orange-400 ml-1">E: {currentExtras}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Current Batsmen */}
+            <div className="col-span-4">
+              <div className="space-y-2">
+                {/* Striker */}
+                <div className="bg-green-900/30 rounded border border-green-800 px-3 py-2 flex justify-between items-center">
+                  <div>
+                    <span className="text-white font-bold">{striker.name}</span>
+                    <span className="text-green-400 ml-2 text-xs">●</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold">
+                      {striker.runs}<span className="text-gray-400 text-sm">({striker.balls})</span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      4s:{striker.fours} 6s:{striker.sixes} SR:{striker.sr}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Non-Striker */}
+                <div className="bg-gray-800/30 rounded border border-gray-700 px-3 py-2 flex justify-between items-center">
+                  <div>
+                    <span className="text-white font-bold">{nonStriker.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold">
+                      {nonStriker.runs}<span className="text-gray-400 text-sm">({nonStriker.balls})</span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      4s:{nonStriker.fours} 6s:{nonStriker.sixes} SR:{nonStriker.sr}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Bowler */}
+            <div className="col-span-3">
+              <div className="bg-red-900/30 rounded border border-red-800 px-3 py-2">
+                <div className="text-white font-bold text-sm mb-1">{bowler.name}</div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-300">{bowler.overs} ov</span>
+                  <span className="text-gray-300">M: {bowler.maidens}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white">{bowler.runs}/{bowler.wickets}</span>
+                  <span className="text-orange-400">Eco: {bowler.economy}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Balls */}
+            <div className="col-span-2">
+              <div className="text-center">
+                <div className="text-gray-300 text-xs mb-1">This Over</div>
+                <div className="flex justify-center space-x-1">
+                  {recentBalls.slice(-6).map((ball, index) => (
+                    <div
+                      key={index}
+                      className={`
+                        w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                        ${ball === '4' ? 'bg-green-600 text-white' : 
+                          ball === '6' ? 'bg-purple-600 text-white' : 
+                          ball === 'W' ? 'bg-red-600 text-white' : 
+                          ball === '0' ? 'bg-gray-600 text-white' : 
+                          'bg-blue-600 text-white'}
+                      `}
+                    >
+                      {ball}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          {match.status === 'live' && (
-            <div className="mt-2">
-              <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
-                ● LIVE
+
+          {/* Bottom Row - Additional Info */}
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex space-x-6 text-gray-300">
+              <span>CRR: {((currentScore / (parseFloat(currentOvers) || 1)) * 6).toFixed(2)}</span>
+              <span>Bowling: {bowlingTeam}</span>
+              {match.matchType && <span>{match.matchType}</span>}
+            </div>
+            
+            {/* Partnership */}
+            <div className="text-gray-300">
+              Partnership: <span className="text-white font-bold">
+                {(striker.runs + nonStriker.runs)} ({striker.balls + nonStriker.balls} balls)
               </span>
+            </div>
+            
+            <div className="text-gray-400">
+              Royal Falcons Cricket
+            </div>
+          </div>
+
+          {/* Match Result Banner (when completed) */}
+          {match.status === 'completed' && match.result && (
+            <div className="mt-3 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-lg p-3 text-center">
+              <div className="text-black font-bold text-lg">
+                🏆 {match.result}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Score Cards */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          {/* Team A */}
-          <div className="card text-center p-6">
-            <h2 className="text-xl font-bold text-white mb-4">{match.teamA}</h2>
-            <div className="text-5xl font-bold text-cricket-green mb-2">
-              {match.currentScore?.teamA || 0}
-              <span className="text-3xl text-gray-300">
-                /{match.currentScore?.wicketsA || 0}
-              </span>
-            </div>
-            <div className="text-gray-300">
-              {match.stats?.teamA?.overs || '0.0'} overs
-            </div>
-            {match.stats?.teamA?.extras > 0 && (
-              <div className="text-sm text-cricket-orange mt-1">
-                Extras: {match.stats.teamA.extras}
-              </div>
-            )}
-          </div>
-
-          {/* Team B */}
-          <div className="card text-center p-6">
-            <h2 className="text-xl font-bold text-white mb-4">{match.teamB}</h2>
-            <div className="text-5xl font-bold text-cricket-blue mb-2">
-              {match.currentScore?.teamB || 0}
-              <span className="text-3xl text-gray-300">
-                /{match.currentScore?.wicketsB || 0}
-              </span>
-            </div>
-            <div className="text-gray-300">
-              {match.stats?.teamB?.overs || '0.0'} overs
-            </div>
-            {match.stats?.teamB?.extras > 0 && (
-              <div className="text-sm text-cricket-orange mt-1">
-                Extras: {match.stats.teamB.extras}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Last Ball/Current Status */}
-        {match.ballByBall && match.ballByBall.length > 0 && (
-          <div className="card p-4 mb-8">
-            <h3 className="text-lg font-bold text-white mb-2">Last Ball</h3>
-            <div className="flex justify-between items-center">
-              <div className="text-white">
-                <span className="font-bold text-cricket-green">
-                  Over {match.ballByBall[match.ballByBall.length - 1].over}.
-                  {match.ballByBall[match.ballByBall.length - 1].ball}
-                </span>
-                <span className="ml-3">
-                  {match.ballByBall[match.ballByBall.length - 1].batsman || 'Batsman'} 
-                  to {match.ballByBall[match.ballByBall.length - 1].bowler || 'Bowler'}
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-cricket-green">
-                  {match.ballByBall[match.ballByBall.length - 1].runs} runs
-                </span>
-                {match.ballByBall[match.ballByBall.length - 1].extras > 0 && (
-                  <span className="ml-2 text-cricket-orange">
-                    +{match.ballByBall[match.ballByBall.length - 1].extras}
-                  </span>
-                )}
-                {match.ballByBall[match.ballByBall.length - 1].wicket && (
-                  <div className="text-red-400 font-bold">WICKET!</div>
-                )}
-              </div>
-            </div>
-            {match.ballByBall[match.ballByBall.length - 1].commentary && (
-              <div className="mt-2 text-gray-300 text-sm">
-                {match.ballByBall[match.ballByBall.length - 1].commentary}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Match Result */}
-        {match.status === 'completed' && match.result && (
-          <div className="card p-6 text-center">
-            <Trophy className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Match Result</h2>
-            <p className="text-xl text-cricket-green font-bold">{match.result}</p>
-          </div>
-        )}
-
-        {/* Real-time indicator */}
-        <div className="text-center mt-8">
-          <p className="text-gray-400 text-sm">
-            Updates automatically • Royal Falcons Scoring
-          </p>
         </div>
       </div>
+
+      {/* Floating Commentary (Optional) */}
+      {match.lastBall?.commentary && (
+        <div className="fixed bottom-28 left-6 right-6 bg-black/80 backdrop-blur rounded-lg p-3 border border-gray-700">
+          <div className="text-green-400 text-sm font-bold mb-1">
+            {match.lastBall.over}.{match.lastBall.ball} | {match.lastBall.runs} runs
+          </div>
+          <div className="text-white text-sm">
+            {match.lastBall.commentary}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
