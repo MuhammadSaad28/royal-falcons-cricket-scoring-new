@@ -16,6 +16,8 @@ import Profile from './components/profile/Profile';
 
 // Route Protection
 import PrivateRoute from './components/common/PrivateRoute';
+import CreateTeam from './components/teams/CreateTeam';
+import MatchSetup from './components/matches/MatchSetup';
 
 function App() {
   return (
@@ -45,6 +47,16 @@ function App() {
                   <Route path="/create-match" element={
                     <PrivateRoute>
                       <CreateMatch />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/create-team" element={
+                    <PrivateRoute>
+                      <CreateTeam />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/match/:matchId/setup" element={
+                    <PrivateRoute>
+                      <MatchSetup />
                     </PrivateRoute>
                   } />
                   <Route path="/live-scoring/:matchId" element={
