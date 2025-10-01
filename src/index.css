@@ -1,58 +1,86 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 font-cricket;
-  }
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-cricket-green hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-secondary {
-    @apply bg-cricket-blue hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-accent {
-    @apply bg-cricket-orange hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .card {
-    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
-  }
-  
-  .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cricket-green focus:border-transparent;
-  }
-  
-  .nav-link {
-    @apply text-gray-600 hover:text-cricket-green transition-colors duration-200;
-  }
-  
-  .nav-link-active {
-    @apply text-cricket-green font-medium;
-  }
+* {
+  box-sizing: border-box;
 }
 
-/* OBS Overlay specific styles */
-.overlay-mode {
-  background: transparent !important;
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #1f2937;
 }
 
-.overlay-mode .card {
-  @apply bg-black bg-opacity-80 text-white border-gray-600;
+#root {
+  min-height: 100vh;
 }
 
-/* Loading animations */
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading animation */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.loading-spinner {
+.animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Custom cricket styles */
+.cricket-gradient {
+  background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* Focus styles for accessibility */
+input:focus, select:focus, textarea:focus, button:focus {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition: colors 0.2s ease-in-out;
+}
+
+/* Print styles for overlays */
+@media print {
+  body {
+    background: white !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
 }

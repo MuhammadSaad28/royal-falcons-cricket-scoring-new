@@ -1,293 +1,281 @@
-# Royal Falcons Cricket Scoring Web App
+# CricketScore Pro - World-Class Cricket Scoring Application
 
-A comprehensive cricket scoring platform built with React.js and Firebase, featuring live scoring, tournament management, and OBS streaming integration.
+A comprehensive cricket scoring application built with React and Firebase, featuring real-time scoring, team management, and professional broadcast-quality overlays.
 
-## Features
+## 🏆 Features
 
 ### Core Functionality
-- **Live Cricket Scoring**: Ball-by-ball scoring with real-time updates
-- **Match Management**: Create, manage, and track cricket matches
-- **Tournament System**: Organize tournaments with automatic points tables
-- **Series Management**: Group matches into series with comprehensive statistics
-- **Real-time Updates**: Live scorecard updates using Firebase Firestore
-- **OBS Integration**: Stream-ready overlay mode for live broadcasts
+- **Firebase Authentication**: Secure email/password authentication
+- **Team Management**: Create and manage teams with player rosters
+- **Player Management**: Add players with comprehensive statistics tracking
+- **Match Creation**: Set up matches with customizable formats (T20, ODI, etc.)
+- **Live Scoring**: Real-time international standard cricket scoring
+- **Public Access**: Unauthenticated users can view match details and scorecards
 
-### User Features
-- **Authentication**: Firebase Auth with email/password and Google Sign-in
-- **User Dashboard**: Personalized dashboard with match history and statistics
-- **Public Scorecards**: Accessible match scorecards for viewers
-- **Mobile Responsive**: Optimized for all screen sizes
-- **Professional UI**: Clean, cricket-themed design with TailwindCSS
+### Advanced Features
+- **Live Overlays**: Professional broadcast-quality overlays for OBS/streaming
+- **Real-time Updates**: Live score updates using Firebase real-time listeners
+- **Responsive Design**: Optimized for mobile, tablet, and desktop
+- **International Standards**: Comprehensive cricket scoring with extras, dismissals, and statistics
+- **Match Filters**: Filter matches by status (Live, Upcoming, Completed)
 
-### Statistics & Analytics
-- **Automatic Statistics**: Run rates, strike rates, bowling figures
-- **Player Performance**: Top scorers, wicket-takers, and MVP suggestions
-- **Tournament Analytics**: Points tables, net run rates, leaderboards
-- **Match Analysis**: Comprehensive post-match statistics
+## 🚀 Getting Started
 
-## Technology Stack
+### Prerequisites
+- Node.js (version 16 or higher)
+- Firebase account
+- Modern web browser
 
-- **Frontend**: React.js 18 with Vite
-- **Backend**: Firebase (Firestore + Authentication)
-- **Styling**: TailwindCSS
-- **Icons**: Lucide React
-- **Routing**: React Router v6
-- **Date Handling**: date-fns
-- **Real-time**: Firebase Firestore listeners
+### Installation
 
-## Project Structure
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd cricket-scoring-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Firebase Setup**
+   - Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
+   - Enable Authentication with Email/Password provider
+   - Create a Firestore database in production mode
+   - Copy your Firebase configuration
+
+4. **Configure Firebase**
+   - Open `src/firebase.js`
+   - Replace the configuration object with your Firebase project credentials:
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "your-api-key",
+     authDomain: "your-project.firebaseapp.com",
+     projectId: "your-project-id",
+     storageBucket: "your-project.appspot.com",
+     messagingSenderId: "123456789",
+     appId: "your-app-id"
+   };
+   ```
+
+5. **Set up Firestore Security Rules**
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /{document=**} {
+         allow read: if true;
+         allow write: if request.auth != null;
+       }
+     }
+   }
+   ```
+
+6. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+7. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+## 📁 Project Structure
 
 ```
 src/
-├── components/
-│   ├── auth/               # Authentication components
-│   ├── common/             # Reusable components
-│   ├── dashboard/          # User dashboard
-│   ├── home/               # Landing page
-│   ├── matches/            # Match-related components
-│   └── profile/            # User profile
-├── contexts/               # React contexts
-├── firebase/               # Firebase configuration
-└── App.jsx                 # Main app component
+├── components/          # Reusable UI components
+│   ├── Navbar.jsx      # Navigation bar
+│   ├── MatchCard.jsx   # Match display cards
+│   ├── Loading.jsx     # Loading spinner
+│   └── ProtectedRoute.jsx
+├── pages/              # Application pages
+│   ├── LandingPage.jsx # Public homepage
+│   ├── Login.jsx       # User authentication
+│   ├── Signup.jsx      # User registration
+│   ├── Dashboard.jsx   # User dashboard
+│   ├── Matches.jsx     # All matches listing
+│   ├── MatchDetail.jsx # Individual match view
+│   ├── CreateTeam.jsx  # Team creation
+│   ├── CreatePlayer.jsx # Player creation
+│   ├── CreateMatch.jsx # Match setup
+│   └── Overlay.jsx     # Broadcast overlay
+├── context/            # React Context providers
+│   └── AuthContext.jsx # Authentication state
+├── firebase.js         # Firebase configuration
+├── App.jsx            # Main app component
+└── index.css          # Global styles
 ```
 
-## Setup Instructions
+## 🎯 Usage Guide
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-- Firebase account
+### For Unauthenticated Users
+1. Browse matches on the homepage
+2. View detailed scorecards for any match
+3. Filter matches by status (Live, Upcoming, Completed)
 
-### 1. Clone and Install
+### For Authenticated Users
+1. **Create Account**: Sign up with email and password
+2. **Create Teams**: Add teams to organize players
+3. **Add Players**: Register players to teams (minimum 11 required for matches)
+4. **Create Matches**: Set up matches between your teams
+5. **Live Scoring**: Score matches in real-time with comprehensive statistics
+6. **Manage**: View and manage all your teams, players, and matches
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd royal-falcons-scoring
+### Overlay for Streaming
+1. Navigate to `/overlay/{matchId}` for any live match
+2. Use this URL as a browser source in OBS or other streaming software
+3. The overlay updates in real-time as the match progresses
 
-# Install dependencies
-npm install
-```
+## 🛠 Firebase Schema
 
-### 2. Firebase Setup
+The application uses the following Firestore collections:
 
-1. **Create a Firebase Project**:
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Click "Create a project"
-   - Follow the setup wizard
-
-2. **Enable Authentication**:
-   - Navigate to Authentication > Sign-in method
-   - Enable "Email/Password" provider
-   - (Optional) Enable "Google" provider
-
-3. **Create Firestore Database**:
-   - Navigate to Firestore Database
-   - Click "Create database"
-   - Start in test mode (configure security rules later)
-   - Choose a location near your users
-
-4. **Get Configuration**:
-   - Go to Project Settings (gear icon)
-   - Scroll to "Your apps" section
-   - Click "Web app" icon to register your app
-   - Copy the configuration object
-
-### 3. Environment Configuration
-
-1. **Create Environment File**:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Add Firebase Configuration**:
-   ```env
-   REACT_APP_FIREBASE_API_KEY=your_api_key_here
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id_here
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
-   REACT_APP_FIREBASE_APP_ID=your_app_id_here
-   ```
-
-### 4. Firestore Security Rules
-
-Update your Firestore rules in the Firebase Console:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users can read/write their own user document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Matches: creators can write, everyone can read
-    match /matches/{matchId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        (resource == null || request.auth.uid == resource.data.createdBy);
-    }
-    
-    // Series: creators can write, everyone can read
-    match /series/{seriesId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        (resource == null || request.auth.uid == resource.data.createdBy);
-    }
-    
-    // Tournaments: creators can write, everyone can read
-    match /tournaments/{tournamentId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        (resource == null || request.auth.uid == resource.data.createdBy);
-    }
-  }
-}
-```
-
-### 5. Run the Application
-
-```bash
-# Start development server
-npm run dev
-
-# The app will be available at http://localhost:5173
-```
-
-## Data Structure
-
-### Matches Collection (`/matches`)
+### Users Collection
 ```javascript
 {
-  id: "match_id",
-  teamA: "Team Alpha",
-  teamB: "Team Beta", 
-  venue: "Cricket Ground",
-  overs: 20,
-  scheduledTime: Timestamp,
-  status: "live" | "upcoming" | "completed",
-  createdBy: "user_id",
-  currentScore: {
-    teamA: 150,
-    teamB: 120,
-    wicketsA: 3,
-    wicketsB: 5,
-    oversA: 15.4,
-    oversB: 14.2
-  },
-  ballByBall: [
-    {
-      over: 1,
-      ball: 1,
-      runs: 4,
-      extras: 0,
-      wicket: false,
-      batsman: "Player Name",
-      bowler: "Bowler Name",
-      commentary: "Great shot!",
-      timestamp: Timestamp
-    }
-  ],
-  stats: {
-    teamA: { runs: 150, wickets: 3, overs: "15.4", extras: 5 },
-    teamB: { runs: 120, wickets: 5, overs: "14.2", extras: 3 }
-  },
-  tossWinner: "Team Alpha",
-  tossDecision: "bat",
-  result: "Team Alpha won by 30 runs"
+  id: "string",
+  name: "string",
+  email: "string", 
+  createdAt: "timestamp",
+  role: "enum('player','admin','coach','viewer')"
 }
 ```
 
-### Users Collection (`/users`)
+### Teams Collection
 ```javascript
 {
-  id: "user_id",
-  name: "John Doe",
-  email: "john@example.com",
-  role: "user",
-  createdAt: Timestamp
+  id: "string",
+  createdBy: "string (user ID)",
+  name: "string",
+  players: "array of player references",
+  createdAt: "timestamp"
 }
 ```
 
-## Usage Guide
+### Players Collection
+```javascript
+{
+  id: "string",
+  teamId: "string (team reference)",
+  createdBy: "string (user ID)",
+  name: "string",
+  // Statistics
+  totalRunsScored: "number",
+  totalMatches: "number", 
+  totalInnings: "number",
+  totalBallsFaced: "number",
+  totalRunsGiven: "number",
+  totalOversBowled: "number",
+  totalWickets: "number",
+  totalSixesHit: "number",
+  totalFoursHit: "number",
+  totalSixesConceded: "number",
+  totalFoursConceded: "number",
+  createdAt: "timestamp"
+}
+```
 
-### Creating a Match
-1. Sign up/Login to the application
-2. Click "Create Match" from dashboard or navigation
-3. Fill in match details (teams, venue, overs, time)
-4. Optionally set toss details
-5. Click "Create Match"
+### Matches Collection
+```javascript
+{
+  id: "string",
+  status: "enum('upcoming','live','completed')",
+  team1: "string (team reference)",
+  team2: "string (team reference)", 
+  toss: {
+    winner: "string (team reference)",
+    decision: "enum('bat','bowl')"
+  },
+  totalPlayersPerTeam: "number (min 11)",
+  overs: "number",
+  maximumOversPerPlayer: "number",
+  createdAt: "timestamp"
+}
+```
 
-### Live Scoring
-1. Navigate to your created match
-2. Click "Score" button on the scorecard
-3. Enter ball-by-ball details:
-   - Runs scored (0-6)
-   - Extras (wide, no-ball, bye, leg-bye)
-   - Wicket information
-   - Batsman and bowler names
-   - Commentary
-4. Stats update automatically in real-time
+### Live Scoring Collection
+```javascript
+{
+  id: "string",
+  matchId: "string (match reference)",
+  batting: "array of batting statistics",
+  bowling: "array of bowling statistics", 
+  fielding: "array of fielding statistics",
+  runs: "number",
+  overs: "number (decimal format)",
+  extraRuns: {
+    wides: "number",
+    noBalls: "number", 
+    legByes: "number",
+    byes: "number"
+  },
+  battersOnCrease: "array of 2 player references",
+  bowler: "string (player reference)",
+  createdAt: "timestamp"
+}
+```
 
-### OBS Integration
-1. Open any match scorecard
-2. Click "OBS" button to get overlay URL
-3. In OBS Studio:
-   - Add "Browser Source"
-   - Paste the overlay URL
-   - Set transparency background
-   - Adjust size as needed
-4. Overlay updates automatically with live scores
+## 🎨 Design Features
 
-### Tournament Features
-- Create tournaments with multiple teams
-- Automatic fixture generation
-- Real-time points table updates
-- Tournament statistics and leaderboards
+### Professional UI
+- Cricket-themed color palette (greens, golds, whites)
+- Responsive grid layouts
+- Smooth animations and transitions
+- Touch-friendly controls for mobile scoring
 
-## Deployment
+### Broadcast Quality Overlays
+- Professional sports channel aesthetic
+- Real-time data updates
+- Gradient backgrounds with proper contrast
+- Clean typography optimized for streaming
 
-### Firebase Hosting (Recommended)
+### Accessibility
+- Keyboard navigation support
+- High contrast ratios
+- Screen reader compatible
+- Mobile-first responsive design
 
-1. **Install Firebase CLI**:
-   ```bash
-   npm install -g firebase-tools
-   ```
+## 🔧 Development
 
-2. **Login and Initialize**:
-   ```bash
-   firebase login
-   firebase init hosting
-   ```
+### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-3. **Build and Deploy**:
+### Key Technologies
+- **React 18** - Modern React with hooks
+- **Firebase 9** - Authentication and Firestore database
+- **React Router 6** - Client-side routing
+- **Tailwind CSS** - Utility-first styling
+- **Lucide React** - Modern icon library
+
+## 📱 Responsive Design
+
+The application is fully responsive with optimized layouts for:
+- **Mobile** (< 768px): Single column layouts, touch-friendly controls
+- **Tablet** (768px - 1024px): Two-column layouts, medium sizing
+- **Desktop** (> 1024px): Multi-column layouts, full feature access
+
+## 🚀 Deployment
+
+1. **Build the application**
    ```bash
    npm run build
+   ```
+
+2. **Deploy to Firebase Hosting** (optional)
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase init hosting
    firebase deploy
    ```
 
-### Netlify/Vercel
+3. **Alternative Deployment**: Deploy to Vercel, Netlify, or any static hosting service
 
-1. **Build the project**:
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy the `dist` folder** to your preferred hosting platform
-
-3. **Set environment variables** in your hosting platform's settings
-
-## Free Tier Limitations
-
-The application is designed to work within Firebase's free tier limits:
-
-- **Firestore**: 50K reads, 20K writes, 20K deletes per day
-- **Authentication**: Unlimited users
-- **Hosting**: 1GB storage, 10GB bandwidth per month
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -295,17 +283,16 @@ The application is designed to work within Firebase's free tier limits:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Support
-
-For support and questions:
-- Check the [Firebase Documentation](https://firebase.google.com/docs)
-- Review [React Documentation](https://react.dev)
-- Open an issue in the repository
-
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## 🙏 Acknowledgments
+
+- Inspired by professional cricket broadcasts (Star Sports, Sky Sports, Fox Sports)
+- Built with modern web technologies for optimal performance
+- Designed for cricket enthusiasts and professional scorers
+
 ---
 
-**Royal Falcons Scoring** - Professional Cricket Scoring Made Simple
+**CricketScore Pro** - Bringing professional cricket scoring to everyone! 🏏

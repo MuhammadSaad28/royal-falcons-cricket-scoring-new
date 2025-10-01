@@ -1,73 +1,76 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-
-// Components
-import Navbar from './components/common/Navbar';
-import LandingPage from './components/home/LandingPage';
-import Login from './components/auth/Login';
-import SignUp from './components/auth/SignUp';
-import Dashboard from './components/dashboard/Dashboard';
-import CreateMatch from './components/matches/CreateMatch';
-import LiveScoring from './components/matches/LiveScoring';
-import Scorecard from './components/matches/Scorecard';
-import OverlayMode from './components/matches/OverlayMode';
-import Profile from './components/profile/Profile';
-
-// Route Protection
-import PrivateRoute from './components/common/PrivateRoute';
-import CreateTeam from './components/teams/CreateTeam';
-import MatchSetup from './components/matches/MatchSetup';
+import { AuthProvider } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import Matches from './pages/Matches';
+import MatchDetail from './pages/MatchDetail';
+import CreateTeam from './pages/CreateTeam';
+import CreatePlayer from './pages/CreatePlayer';
+import CreateMatch from './pages/CreateMatch';
+import Overlay from './pages/Overlay';
+import ProtectedRoute from './components/ProtectedRoute';
+import LiveScoring from './pages/LiveScoring';
+import PlayerSelection from './pages/PlayerSelection';
+import MatchSettings from './pages/MatchSettings';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        <div className="App">
           <Routes>
-            {/* Overlay route (no navbar) */}
-            <Route path="/overlay/:matchId" element={<OverlayMode />} />
+            {/* Overlay route - no navbar */}
+            <Route path="/overlay/:id" element={<Overlay />} />
             
-            {/* Regular routes (with navbar) */}
+            {/* Regular routes with navbar */}
             <Route path="/*" element={
               <>
                 <Navbar />
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/scorecard/:matchId" element={<Scorecard />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/matches" element={<Matches />} />
+                  <Route path="/match/:id" element={<MatchDetail />} />
                   
                   {/* Protected Routes */}
                   <Route path="/dashboard" element={
-                    <PrivateRoute>
+                    <ProtectedRoute>
                       <Dashboard />
-                    </PrivateRoute>
+                    </ProtectedRoute>
                   } />
-                  <Route path="/create-match" element={
-                    <PrivateRoute>
-                      <CreateMatch />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/create-team" element={
-                    <PrivateRoute>
+                  <Route path="/teams/create" element={
+                    <ProtectedRoute>
                       <CreateTeam />
-                    </PrivateRoute>
+                    </ProtectedRoute>
                   } />
-                  <Route path="/match/:matchId/setup" element={
-                    <PrivateRoute>
-                      <MatchSetup />
-                    </PrivateRoute>
+                  <Route path="/players/create" element={
+                    <ProtectedRoute>
+                      <CreatePlayer />
+                    </ProtectedRoute>
                   } />
-                  <Route path="/live-scoring/:matchId" element={
-                    <PrivateRoute>
+                  <Route path="/matches/create" element={
+                    <ProtectedRoute>
+                      <CreateMatch />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/match/:id/score" element={
+                    <ProtectedRoute>
                       <LiveScoring />
-                    </PrivateRoute>
+                    </ProtectedRoute>
                   } />
-                  <Route path="/profile" element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
+                  <Route path="/match/:id/players" element={
+                    <ProtectedRoute>
+                      <PlayerSelection />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/match/:id/settings" element={
+                    <ProtectedRoute>
+                      <MatchSettings />
+                    </ProtectedRoute>
                   } />
                 </Routes>
               </>
