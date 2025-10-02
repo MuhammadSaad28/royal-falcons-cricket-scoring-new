@@ -12,6 +12,17 @@ export default function Overlay() {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
+    // Make body transparent
+    document.body.style.backgroundColor = 'transparent';
+    document.documentElement.style.backgroundColor = 'transparent';
+    
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.documentElement.style.backgroundColor = '';
+    };
+  }, []);
+
+  useEffect(() => {
     if (!id) return;
 
     const fetchMatch = async () => {
@@ -149,9 +160,10 @@ const currentRunRate =
   const lastBalls = ['1', '4', '6', 'W', '0', '2'];
 
   return (
-   <div className="min-h-screen bg-transparent relative overflow-hidden">
+//    <div className="min-h-screen bg-transparent relative overflow-hidden">
+   <div className="fixed inset-0 pointer-events-none">
  {/* Bottom Score Bar */}
-<div className="fixed bottom-0 left-0 right-0 z-50">
+<div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto">
   <div className="bg-black/90 border-t-4 border-emerald-500 shadow-lg">
     {/* Top row - Teams & Score */}
     <div className="px-6 py-3 flex items-center justify-between max-w-screen-2xl mx-auto">
