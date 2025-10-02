@@ -30,6 +30,91 @@ export default function LiveScoring() {
   const [selectedNewBatter, setSelectedNewBatter] = useState(null);
   const [selectedNewBowler, setSelectedNewBowler] = useState(null);
 
+  const [inningActive, setInningActive] = useState(true);
+  const [matchFinished, setMatchFinished] = useState(false);
+
+  const checkInningEnd = (currentInnings, match, inningIndex) => {
+    const maxOvers = match.overs; // from matches collection
+    const totalPlayers = match.totalPlayersPerTeam;
+
+    // 1st or 2nd inning criteria
+    if (currentInnings.wickets >= totalPlayers - 1) return true;
+    if (currentInnings.overs >= maxOvers) return true;
+
+    if (inningIndex === 1) {
+      // chasing team runs check
+      const firstInnings = liveData.innings[0];
+      if (currentInnings.runs > firstInnings.runs) return true;
+    }
+
+    return false;
+  };
+
+  // const startSecondInning = async () => {
+  //   try {
+  //     const newInnings = {
+  //       teamId: bowlingTeam, // 2nd team ab batting karegi
+  //       runs: 0,
+  //       wickets: 0,
+  //       overs: 0,
+  //       totalBalls: 0,
+  //       batting: [],
+  //       bowling: [],
+  //       fielding: [],
+  //       extraRuns: { wides: 0, noBalls: 0, legByes: 0, byes: 0 },
+  //       battersOnCrease: [],
+  //       currentBowler: null,
+  //     };
+
+  //     await updateDoc(doc(db, "liveScoring", id), {
+  //       innings: [...liveData.innings, newInnings],
+  //     });
+
+  //     setInningActive(true);
+  //     setShowInitialModal(true); // opening players modal
+  //   } catch (error) {
+  //     console.error("Error starting 2nd inning:", error);
+  //   }
+  // };
+
+  const startSecondInning = async () => {
+    try {
+      const newBattingTeam = bowlingTeam; // ab doosri team batting karegi
+      const newBowlingTeam = battingTeam; // pehli wali team ab bowl karegi
+
+      const newInnings = {
+        teamId: newBattingTeam,
+        runs: 0,
+        wickets: 0,
+        overs: 0,
+        totalBalls: 0,
+        batting: [],
+        bowling: [],
+        fielding: [],
+        extraRuns: { wides: 0, noBalls: 0, legByes: 0, byes: 0 },
+        battersOnCrease: [],
+        currentBowler: null,
+      };
+
+      await updateDoc(doc(db, "liveScoring", id), {
+        innings: [...liveData.innings, newInnings],
+      });
+
+      // ✅ reset React state
+      setBattingTeam(newBattingTeam);
+      setBowlingTeam(newBowlingTeam);
+
+      setSelectedStriker(null);
+      setSelectedNonStriker(null);
+      setSelectedBowler(null);
+
+      setInningActive(true);
+      setShowInitialModal(true); // opening players modal
+    } catch (error) {
+      console.error("Error starting 2nd inning:", error);
+    }
+  };
+
   useEffect(() => {
     if (id) fetchMatchData();
   }, [id]);
@@ -43,11 +128,12 @@ export default function LiveScoring() {
       }
       const matchData = { id: matchDoc.id, ...matchDoc.data() };
       setMatch(matchData);
+      console.log("Match Data:", matchData);
 
       // Fetch teams
       const [team1Doc, team2Doc] = await Promise.all([
-        getDoc(doc(db, "teams", matchData.team1)),
-        getDoc(doc(db, "teams", matchData.team2)),
+        getDoc(doc(db, "teams", matchData?.team1)),
+        getDoc(doc(db, "teams", matchData?.team2)),
       ]);
       const teamsData = {
         [matchData.team1]: team1Doc.exists()
@@ -98,16 +184,31 @@ export default function LiveScoring() {
           setLiveData(data);
 
           // Check if initial players are set - only show modal if we have no innings data at all
+          //   const currentInnings = data.innings?.[data.innings.length - 1];
+          //   if (
+          //     !currentInnings?.battersOnCrease ||
+          //     currentInnings.battersOnCrease.length < 2 ||
+          //     !currentInnings?.currentBowler
+          //   ) {
+          //     // Only show if we haven't set initial players yet (no batting/bowling arrays)
+          //     if (
+          //       !currentInnings?.batting ||
+          //       currentInnings.batting.length === 0
+          //     ) {
+          //       setShowInitialModal(true);
+          //     }
+          //   }
           const currentInnings = data.innings?.[data.innings.length - 1];
-          if (
-            !currentInnings?.battersOnCrease ||
-            currentInnings.battersOnCrease.length < 2 ||
-            !currentInnings?.currentBowler
-          ) {
-            // Only show if we haven't set initial players yet (no batting/bowling arrays)
+          console.log("Current Innings:", currentInnings, " Live Data: ", data);
+          setBattingTeam(currentInnings.teamId);
+          setBowlingTeam(currentInnings.teamId === matchData.team1 ? matchData.team2 : matchData.team1);
+
+          if (currentInnings) {
+            // agar innings abhi start hui aur batting array empty hai to modal dikhao
             if (
-              !currentInnings?.batting ||
-              currentInnings.batting.length === 0
+              (!currentInnings.batting ||
+                currentInnings.batting.length === 0) &&
+              (!currentInnings.bowling || currentInnings.bowling.length === 0)
             ) {
               setShowInitialModal(true);
             }
@@ -359,6 +460,25 @@ export default function LiveScoring() {
         innings: updatedInnings,
       });
 
+      if (
+        checkInningEnd(
+          updatedInnings[updatedInnings.length - 1],
+          match,
+          updatedInnings.length - 1
+        )
+      ) {
+        setInningActive(false);
+
+        if (updatedInnings.length === 1) {
+          // First inning khatam
+          console.log("First innings completed");
+        } else {
+          // Second innings khatam → match finish
+          setMatchFinished(true);
+          console.log("Match finished!");
+        }
+      }
+
       // Show new bowler modal if over completed
       if (overCompleted) {
         setShowNewBowlerModal(true);
@@ -369,163 +489,101 @@ export default function LiveScoring() {
     }
   };
 
-//   const addWicket = async () => {
-//     if (!liveData) return;
+  const addWicket = async (outType) => {
+    if (!liveData) return;
 
-//     try {
-//       const currentInnings = liveData.innings[liveData.innings.length - 1];
-//       const striker = currentInnings.battersOnCrease[0];
-//       const nonStriker = currentInnings.battersOnCrease[1] || null;
-//       const bowler = currentInnings.currentBowler;
+    try {
+      const currentInnings = liveData.innings[liveData.innings.length - 1];
+      const striker = currentInnings.battersOnCrease[0];
+      const nonStriker = currentInnings.battersOnCrease[1] || null;
+      const bowler = currentInnings.currentBowler;
 
-//       // ✅ Increment total balls
-//       const newTotalBalls = (currentInnings.totalBalls || 0) + 1;
-//       const newOvers = calculateOvers(newTotalBalls);
+      // ✅ Increment total balls
+      const newTotalBalls = (currentInnings.totalBalls || 0) + 1;
+      const newOvers = calculateOvers(newTotalBalls);
+      const overCompleted = newTotalBalls % 6 === 0;
 
-//       // ✅ Check over complete
-//       const overCompleted = newTotalBalls % 6 === 0;
+      // ✅ Update batting
+      const updatedBatting = currentInnings.batting.map((b) => {
+        if (b.playerId === striker) {
+          return {
+            ...b,
+            ballsFaced: (b.ballsFaced || 0) + 1,
+            out: true,
+            outType, // dynamic
+            outBy: bowler, // bowler credited by default
+          };
+        }
+        return b;
+      });
 
-//       // ✅ Update batting
-//       const updatedBatting = currentInnings.batting.map((b) => {
-//         if (b.playerId === striker) {
-//           return {
-//             ...b,
-//             ballsFaced: (b.ballsFaced || 0) + 1,
-//             out: true,
-//             outType: "bowled", // TODO: dynamic later
-//             outBy: bowler,
-//           };
-//         }
-//         return b;
-//       });
+      // ✅ Update bowling
+      const updatedBowling = currentInnings.bowling.map((b) => {
+        if (b.playerId === bowler) {
+          const totalBallsBowled = b.totalBallsBowled
+            ? b.totalBallsBowled + 1
+            : 1;
 
-//       // ✅ Update bowling
-//       console.log(
-//         "Bowler before wicket:",
-//         currentInnings.bowling.find((b) => b.playerId === bowler)
-//       );
-//       const updatedBowling = currentInnings.bowling.map((b) => {
-//         if (b.playerId === bowler) {
-//           const totalBallsBowled = b.totalBallsBowled
-//             ? b.totalBallsBowled + 1
-//             : 1;
-//           return {
-//             ...b,
-//             wickets: [...(b.wickets || []), striker],
-//             totalBallsBowled,
-//             oversBowled: calculateOvers(totalBallsBowled),
-//           };
-//         }
-//         return b;
-//       });
+          return {
+            ...b,
+            //   wickets: [...(b.wickets || []), striker],
+            wickets:
+              outType !== "runout"
+                ? [...(b.wickets || []), striker] // bowled/caught/stump → credit
+                : [...(b.wickets || [])],
+            totalBallsBowled,
+            oversBowled: calculateOvers(totalBallsBowled),
+          };
+        }
+        return b;
+      });
 
-//       // ✅ Update innings
-//       const updatedInnings = [...liveData.innings];
-//       updatedInnings[updatedInnings.length - 1] = {
-//         ...currentInnings,
-//         wickets: currentInnings.wickets + 1,
-//         totalBalls: newTotalBalls,
-//         overs: newOvers,
-//         batting: updatedBatting,
-//         bowling: updatedBowling,
-//         // striker out → only non-striker remains, new batter will join
-//         battersOnCrease: [nonStriker, null],
-//       };
+      // ✅ Update innings
+      const updatedInnings = [...liveData.innings];
+      updatedInnings[updatedInnings.length - 1] = {
+        ...currentInnings,
+        wickets: currentInnings.wickets + 1,
+        totalBalls: newTotalBalls,
+        overs: newOvers,
+        batting: updatedBatting,
+        bowling: updatedBowling,
+        battersOnCrease: [nonStriker, null],
+      };
 
-//       // ✅ Save to Firestore
-//       await updateDoc(doc(db, "liveScoring", id), {
-//         innings: updatedInnings,
-//       });
+      await updateDoc(doc(db, "liveScoring", id), {
+        innings: updatedInnings,
+      });
 
-//       // ✅ Show new batter modal
-//       setShowNewBatterModal(true);
+      if (
+        checkInningEnd(
+          updatedInnings[updatedInnings.length - 1],
+          match,
+          updatedInnings.length - 1
+        )
+      ) {
+        setInningActive(false);
 
-//       // ✅ Handle over completion → bowler change pending
-//       if (overCompleted) {
-//         setPendingBowlerChange(true);
-//       }
-//     } catch (error) {
-//       console.error("Error adding wicket:", error);
-//       alert("Error adding wicket. Please try again.");
-//     }
-//   };
-
-const addWicket = async (outType) => {
-  if (!liveData) return;
-
-  try {
-    const currentInnings = liveData.innings[liveData.innings.length - 1];
-    const striker = currentInnings.battersOnCrease[0];
-    const nonStriker = currentInnings.battersOnCrease[1] || null;
-    const bowler = currentInnings.currentBowler;
-
-    // ✅ Increment total balls
-    const newTotalBalls = (currentInnings.totalBalls || 0) + 1;
-    const newOvers = calculateOvers(newTotalBalls);
-    const overCompleted = newTotalBalls % 6 === 0;
-
-    // ✅ Update batting
-    const updatedBatting = currentInnings.batting.map((b) => {
-      if (b.playerId === striker) {
-        return {
-          ...b,
-          ballsFaced: (b.ballsFaced || 0) + 1,
-          out: true,
-          outType,              // dynamic
-          outBy: bowler,        // bowler credited by default
-        };
+        if (updatedInnings.length === 1) {
+          // First inning khatam
+          console.log("First innings completed");
+        } else {
+          // Second innings khatam → match finish
+          setMatchFinished(true);
+          console.log("Match finished!");
+        }
       }
-      return b;
-    });
 
-    // ✅ Update bowling
-    const updatedBowling = currentInnings.bowling.map((b) => {
-      if (b.playerId === bowler) {
-        const totalBallsBowled = b.totalBallsBowled
-          ? b.totalBallsBowled + 1
-          : 1;
+      // ✅ Show new batter modal
+      setShowNewBatterModal(true);
 
-        return {
-          ...b,
-        //   wickets: [...(b.wickets || []), striker],
-        wickets: outType !== "runout"
-          ? [...(b.wickets || []), striker] // bowled/caught/stump → credit
-          : [...(b.wickets || [])],
-          totalBallsBowled,
-          oversBowled: calculateOvers(totalBallsBowled),
-        };
+      if (overCompleted) {
+        setPendingBowlerChange(true);
       }
-      return b;
-    });
-
-    // ✅ Update innings
-    const updatedInnings = [...liveData.innings];
-    updatedInnings[updatedInnings.length - 1] = {
-      ...currentInnings,
-      wickets: currentInnings.wickets + 1,
-      totalBalls: newTotalBalls,
-      overs: newOvers,
-      batting: updatedBatting,
-      bowling: updatedBowling,
-      battersOnCrease: [nonStriker, null],
-    };
-
-    await updateDoc(doc(db, "liveScoring", id), {
-      innings: updatedInnings,
-    });
-
-    // ✅ Show new batter modal
-    setShowNewBatterModal(true);
-
-    if (overCompleted) {
-      setPendingBowlerChange(true);
+    } catch (error) {
+      console.error("Error adding wicket:", error);
+      alert("Error adding wicket. Please try again.");
     }
-  } catch (error) {
-    console.error("Error adding wicket:", error);
-    alert("Error adding wicket. Please try again.");
-  }
-};
-
+  };
 
   const confirmNewBatter = async () => {
     if (!selectedNewBatter) {
@@ -944,36 +1002,52 @@ const addWicket = async (outType) => {
               key={r}
               onClick={() => addRuns(r)}
               className="bg-gray-100 hover:bg-gray-200 p-4 rounded text-lg font-bold transition"
-              disabled={!striker || !currentBowler}
+              //   disabled={!striker || !currentBowler}
+              disabled={
+                !striker || !currentBowler || !inningActive || matchFinished
+              }
             >
               {r}
             </button>
           ))}
         </div>
 
-        {/* Wicket and Undo Buttons */}
-        {/* <div className="grid grid-cols-2 gap-3 mb-4">
-          <button
-            onClick={() => addWicket()}
-            className="bg-red-500 hover:bg-red-600 text-white p-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!striker || !currentBowler}
-          >
-            Wicket
-          </button>
-        </div> */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-  {["bowled", "caught", "runout", "stump"].map(type => (
-    <button
-      key={type}
-      onClick={() => addWicket(type)}
-      className="bg-red-500 hover:bg-red-600 text-white p-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed capitalize"
-      disabled={!striker || !currentBowler}
-    >
-      {type}
-    </button>
-  ))}
-</div>
+          {["bowled", "caught", "runout", "stump"].map((type) => (
+            <button
+              key={type}
+              onClick={() => addWicket(type)}
+              className="bg-red-500 hover:bg-red-600 text-white p-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed capitalize"
+              //   disabled={!striker || !currentBowler}
+              disabled={
+                !striker || !currentBowler || !inningActive || matchFinished
+              }
+            >
+              {type}
+            </button>
+          ))}
 
+          {!inningActive &&
+            !matchFinished &&
+            liveData?.innings?.length === 1 && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={startSecondInning}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                >
+                  Start 2nd Innings
+                </button>
+              </div>
+            )}
+          {matchFinished && (
+            <div className="text-center mt-4">
+              <h2 className="text-xl font-bold text-cricket-600">
+                Match Finished!
+              </h2>
+              <p className="mt-2">Thank you for using the live scoring app.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

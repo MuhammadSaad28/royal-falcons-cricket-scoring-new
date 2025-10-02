@@ -503,7 +503,7 @@ export default function MatchDetail() {
                 {targetInfo && (
                   <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 rounded-xl p-4 border border-red-500/30">
                     <div className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">
-                      Target
+                      Required
                     </div>
                     <div className="text-white text-3xl font-black mb-1">
                       {targetInfo.required}

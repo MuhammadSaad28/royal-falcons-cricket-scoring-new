@@ -110,9 +110,15 @@ export default function Overlay() {
   const getEconomy = (runs, overs) => overs > 0 ? (runs / overs).toFixed(2) : '0.00';
   
   // Calculate current run rate
-  const currentRunRate = currentInnings.overs > 0 
-    ? (currentInnings.runs / currentInnings.overs).toFixed(2) 
-    : '0.00';
+//   const currentRunRate = currentInnings.overs > 0 
+//     ? (currentInnings.runs / currentInnings.overs).toFixed(2) 
+//     : '0.00';
+const totalBalls = currentInnings.totalBalls || 0;
+const currentRunRate =
+  totalBalls > 0
+    ? (currentInnings.runs / (totalBalls / 6)).toFixed(2)
+    : "0.00";
+
 
   // Calculate partnership
   const partnership = (strikerStats?.runsScored || 0) + (nonStrikerStats?.runsScored || 0);
@@ -133,6 +139,11 @@ export default function Overlay() {
       rrr: requiredRunRate
     };
   }
+
+//   calculate required run rate
+  const requiredRunRate = targetInfo && targetInfo.balls > 0
+    ? ((targetInfo.required / targetInfo.balls) * 6).toFixed(2)
+    : '0.00';
 
   // Get last 6 balls (mock - you'll need to implement ball history)
   const lastBalls = ['1', '4', '6', 'W', '0', '2'];
@@ -176,9 +187,16 @@ export default function Overlay() {
         <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">
           {liveData.innings.length === 1 ? "1st Innings" : "2nd Innings"} • T{match.overs}
         </span>
+        <div className="flex items-baseline space-x-3">
         <span className="text-yellow-400 font-black text-lg">
           CRR: {currentRunRate}
         </span>
+        {targetInfo && (
+          <span className="text-yellow-400 font-black text-lg">
+            RRR: {requiredRunRate}
+            </span>
+        )}
+        </div>
         {previousInnings && (
           <span className="text-red-400 text-xs mt-1">
             Target {previousInnings.runs + 1}
@@ -225,6 +243,14 @@ export default function Overlay() {
             </div>
           )}
         </div>
+
+        {/* Center - runs required in number balls */}
+        {targetInfo && (
+            <div className="flex flex-col items-center text-white text-sm">
+               
+                <span className="text-yellow-400 font-semibold">Need {targetInfo.required} runs in {targetInfo.balls} balls</span>
+            </div>
+        )}
 
         {/* Right - Bowler */}
         {currentBowler && bowlerStats && (
