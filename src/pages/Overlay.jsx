@@ -203,21 +203,26 @@ const currentRunRate =
         <span className="text-yellow-400 font-black text-lg">
           CRR: {currentRunRate}
         </span>
-        {targetInfo && (
+        {previousInnings && targetInfo && (
           <span className="text-yellow-400 font-black text-lg">
             RRR: {requiredRunRate}
             </span>
         )}
         </div>
-        {previousInnings && (
+        {/* {previousInnings && (
           <span className="text-red-400 text-xs mt-1">
             Target {previousInnings.runs + 1}
           </span>
-        )}
+        )} */}
       </div>
 
       {/* Right - Bowling Team */}
       <div className="flex items-center justify-end space-x-4 flex-1">
+        {previousInnings && (
+          <span className="text-red-400 text-xl">
+            Target {previousInnings.runs + 1}
+          </span>
+        )}
         <div className="bg-blue-600 px-3 py-1 rounded-md shadow">
           <span className="text-white font-bold uppercase text-sm">
             {bowlingTeam?.name || "Bowling"}
@@ -231,14 +236,14 @@ const currentRunRate =
       <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
         
         {/* Left - Batters */}
-        <div className="flex flex-col space-y-1 text-white text-sm">
+        <div className="flex flex-col space-y-1 text-white text-lg">
           {strikerStats && (
             <div className="flex items-center space-x-2">
               <span className="text-emerald-400 font-semibold">
                 {players[striker]?.name || "Striker"} *
               </span>
               <span>{strikerStats.runsScored} ({strikerStats.ballsFaced})</span>
-              <span className="text-amber-400 text-xs">
+              <span className="text-amber-400 text-sm">
                 SR: {getStrikeRate(strikerStats.runsScored, strikerStats.ballsFaced)}
               </span>
             </div>
@@ -249,7 +254,7 @@ const currentRunRate =
                 {players[nonStriker]?.name || "Non-Striker"}
               </span>
               <span>{nonStrikerStats.runsScored} ({nonStrikerStats.ballsFaced})</span>
-              <span className="text-amber-400 text-xs">
+              <span className="text-amber-400 text-sm">
                 SR: {getStrikeRate(nonStrikerStats.runsScored, nonStrikerStats.ballsFaced)}
               </span>
             </div>
@@ -258,7 +263,7 @@ const currentRunRate =
 
         {/* Center - runs required in number balls */}
         {targetInfo && (
-            <div className="flex flex-col items-center text-white text-sm">
+            <div className="flex flex-col items-center text-white text-xl">
                
                 <span className="text-yellow-400 font-semibold">Need {targetInfo.required} runs in {targetInfo.balls} balls</span>
             </div>
@@ -266,12 +271,14 @@ const currentRunRate =
 
         {/* Right - Bowler */}
         {currentBowler && bowlerStats && (
-          <div className="text-right text-white text-sm">
-            <div className="font-semibold">{players[currentBowler]?.name}</div>
+          <div className="text-right text-white text-lg">
+            <div className="flex flex-row gap-4 items-end">
             <div className="font-mono">
               {bowlerStats.oversBowled?.toFixed(1) || "0.0"}-
               {bowlerStats.runsConceded || 0}-
               {bowlerStats.wickets?.length || 0}
+            </div>
+            <div className="font-semibold">{players[currentBowler]?.name}</div>
             </div>
             <div className="text-red-400 text-xs">
               Econ {getEconomy(bowlerStats.runsConceded, bowlerStats.oversBowled)}
