@@ -1,205 +1,3 @@
-// import { useState } from 'react';
-// import { ChevronDown, ChevronUp } from 'lucide-react';
-
-// export default function ScoreCard({ match, liveData, teams, players }) {
-//   const [expandedSection, setExpandedSection] = useState('batting');
-
-//   const toggleSection = (section) => {
-//     setExpandedSection(expandedSection === section ? null : section);
-//   };
-
-//   const calculateStrikeRate = (runs, balls) => {
-//     if (balls === 0) return 0;
-//     return ((runs / balls) * 100).toFixed(1);
-//   };
-
-//   const calculateEconomy = (runs, overs) => {
-//     if (overs === 0) return 0;
-//     return (runs / overs).toFixed(2);
-//   };
-
-//   const battingData = liveData?.batting || [];
-//   const bowlingData = liveData?.bowling || [];
-
-//   return (
-//     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-//       {/* Match Summary */}
-//       <div className="bg-cricket-600 text-white p-4">
-//         <div className="flex justify-between items-center">
-//           <div>
-//             <h3 className="text-lg font-bold">
-//               {liveData?.runs || 0}/{battingData.filter(b => b.out).length || 0}
-//             </h3>
-//             <p className="text-cricket-100">
-//               ({liveData?.overs || 0} overs)
-//             </p>
-//           </div>
-//           <div className="text-right">
-//             <p className="text-sm text-cricket-100">Current RR</p>
-//             <p className="font-bold">
-//               {liveData?.overs > 0 ? ((liveData?.runs || 0) / (liveData?.overs || 1)).toFixed(2) : '0.00'}
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Batting Scorecard */}
-//       <div className="border-b">
-//         <button
-//           onClick={() => toggleSection('batting')}
-//           className="w-full p-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
-//         >
-//           <h4 className="font-semibold text-gray-900">Batting</h4>
-//           {expandedSection === 'batting' ? (
-//             <ChevronUp className="w-5 h-5 text-gray-500" />
-//           ) : (
-//             <ChevronDown className="w-5 h-5 text-gray-500" />
-//           )}
-//         </button>
-        
-//         {expandedSection === 'batting' && (
-//           <div className="px-4 pb-4">
-//             <div className="overflow-x-auto">
-//               <table className="min-w-full">
-//                 <thead>
-//                   <tr className="text-xs text-gray-500 uppercase tracking-wider">
-//                     <th className="text-left py-2">Batsman</th>
-//                     <th className="text-right py-2">R</th>
-//                     <th className="text-right py-2">B</th>
-//                     <th className="text-right py-2">4s</th>
-//                     <th className="text-right py-2">6s</th>
-//                     <th className="text-right py-2">SR</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="divide-y divide-gray-200">
-//                   {battingData.map((batsman, index) => {
-//                     const player = players[batsman.playerId];
-//                     const isOnCrease = liveData?.battersOnCrease?.includes(batsman.playerId);
-                    
-//                     return (
-//                       <tr key={index} className={isOnCrease ? 'bg-cricket-50' : ''}>
-//                         <td className="py-2">
-//                           <div className="flex items-center">
-//                             <span className="font-medium">
-//                               {player?.name || 'Unknown Player'}
-//                             </span>
-//                             {isOnCrease && (
-//                               <span className="ml-2 text-cricket-600 font-bold">*</span>
-//                             )}
-//                           </div>
-//                           {batsman.out && (
-//                             <div className="text-xs text-red-600">
-//                               {batsman.outType} {batsman.outBy && `b ${players[batsman.outBy]?.name}`}
-//                             </div>
-//                           )}
-//                         </td>
-//                         <td className="text-right py-2 font-medium">
-//                           {batsman.runsScored}
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {batsman.ballsFaced}
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {batsman.fours}
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {batsman.sixes}
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {calculateStrikeRate(batsman.runsScored, batsman.ballsFaced)}
-//                         </td>
-//                       </tr>
-//                     );
-//                   })}
-//                 </tbody>
-//               </table>
-//             </div>
-
-//             {/* Extras */}
-//             {liveData?.extraRuns && (
-//               <div className="mt-4 pt-4 border-t">
-//                 <div className="flex justify-between text-sm">
-//                   <span className="text-gray-600">Extras</span>
-//                   <span className="font-medium">
-//                     {Object.values(liveData.extraRuns).reduce((a, b) => a + b, 0)}
-//                     {' '}(w {liveData.extraRuns.wides}, nb {liveData.extraRuns.noBalls}, b {liveData.extraRuns.byes}, lb {liveData.extraRuns.legByes})
-//                   </span>
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-//         )}
-//       </div>
-
-//       {/* Bowling Figures */}
-//       <div>
-//         <button
-//           onClick={() => toggleSection('bowling')}
-//           className="w-full p-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
-//         >
-//           <h4 className="font-semibold text-gray-900">Bowling</h4>
-//           {expandedSection === 'bowling' ? (
-//             <ChevronUp className="w-5 h-5 text-gray-500" />
-//           ) : (
-//             <ChevronDown className="w-5 h-5 text-gray-500" />
-//           )}
-//         </button>
-        
-//         {expandedSection === 'bowling' && (
-//           <div className="px-4 pb-4">
-//             <div className="overflow-x-auto">
-//               <table className="min-w-full">
-//                 <thead>
-//                   <tr className="text-xs text-gray-500 uppercase tracking-wider">
-//                     <th className="text-left py-2">Bowler</th>
-//                     <th className="text-right py-2">O</th>
-//                     <th className="text-right py-2">R</th>
-//                     <th className="text-right py-2">W</th>
-//                     <th className="text-right py-2">Econ</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="divide-y divide-gray-200">
-//                   {bowlingData.map((bowler, index) => {
-//                     const player = players[bowler.playerId];
-//                     const isCurrentBowler = liveData?.bowler === bowler.playerId;
-                    
-//                     return (
-//                       <tr key={index} className={isCurrentBowler ? 'bg-blue-50' : ''}>
-//                         <td className="py-2">
-//                           <div className="flex items-center">
-//                             <span className="font-medium">
-//                               {player?.name || 'Unknown Player'}
-//                             </span>
-//                             {isCurrentBowler && (
-//                               <span className="ml-2 text-blue-600 font-bold">*</span>
-//                             )}
-//                           </div>
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {bowler.oversBowled}
-//                         </td>
-//                         <td className="text-right py-2 font-medium">
-//                           {bowler.runsConceded}
-//                         </td>
-//                         <td className="text-right py-2 font-medium">
-//                           {bowler.wickets?.length || 0}
-//                         </td>
-//                         <td className="text-right py-2">
-//                           {calculateEconomy(bowler.runsConceded, bowler.oversBowled)}
-//                         </td>
-//                       </tr>
-//                     );
-//                   })}
-//                 </tbody>
-//               </table>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, Target } from 'lucide-react';
 
@@ -220,18 +18,38 @@ export default function ScoreCard({ match, liveData, teams, players }) {
   };
 
   const calculateEconomy = (runs, overs) => {
-    if (overs === 0) return '0.00';
-    return (runs / overs).toFixed(2);
-  };
+  if (!overs || overs <= 0) return "0.00";
+
+  // overs = 0.2 means 0 overs 2 balls
+  const fullOvers = Math.floor(overs);         // e.g. 0 from 0.2
+  const ballsPart = Math.round((overs % 1) * 10); // e.g. 2 from 0.2
+
+  const totalBalls = fullOvers * 6 + ballsPart;
+  const actualOvers = totalBalls / 6;
+
+  return actualOvers > 0 ? (runs / actualOvers).toFixed(2) : "0.00";
+};
 
   const innings = liveData.innings[activeInnings];
   const battingTeam = teams[innings.teamId];
   const bowlingTeamId = innings.teamId === match.team1 ? match.team2 : match.team1;
   const bowlingTeam = teams[bowlingTeamId];
 
-  const currentRunRate = innings.overs > 0 
-    ? (innings.runs / innings.overs).toFixed(2) 
-    : '0.00';
+//   const currentRunRate = innings.overs > 0 
+//     ? (innings.runs / innings.overs).toFixed(2) 
+//     : '0.00';
+
+// const currentRunRate = innings?.overs > 0 && innings?.wickets < match.totalPlayersPerTeam - 1 ? (innings.runs / innings.overs).toFixed(2) : innings?.overs > 0 && innings?.wickets >= match.totalPlayersPerTeam - 1 ? (innings.runs / match.overs) : '0.00';
+const totalBalls = innings?.totalBalls || 0; // innings ke andar balls ka field hai
+const oversFraction = totalBalls / 6; // balls ko overs me convert karo
+
+const currentRunRate =
+  oversFraction > 0 && innings?.wickets < match.totalPlayersPerTeam - 1
+    ? (innings.runs / oversFraction).toFixed(2)
+    : oversFraction > 0 && innings?.wickets >= match.totalPlayersPerTeam - 1
+    ? (innings.runs / match.overs).toFixed(2)
+    : "0.00";
+
 
   const totalExtras = Object.values(innings.extraRuns || {}).reduce((a, b) => a + b, 0);
 
@@ -342,6 +160,11 @@ export default function ScoreCard({ match, liveData, teams, players }) {
                                 <span className="text-green-400 font-black">★</span>
                               )}
                             </div>
+                            {!batsman.out && isOnCrease && (
+                                <div className="text-green-400 text-xs mt-0.5 font-medium">
+                                    Not Out
+                                </div>
+                 ) }
                             {batsman.out && (
                               <div className="text-red-400 text-xs mt-0.5 font-medium">
                                 {batsman.outType}
@@ -533,7 +356,7 @@ export default function ScoreCard({ match, liveData, teams, players }) {
         )}
 
         {/* Partnership (if batting) */}
-        {innings.battersOnCrease?.length === 2 && (
+        {/* {innings.battersOnCrease?.length === 2 && (
           <div className="p-6 bg-gradient-to-r from-green-600/10 to-emerald-600/10 border-t border-green-500/30">
             <div className="flex items-center justify-between">
               <div>
@@ -571,7 +394,7 @@ export default function ScoreCard({ match, liveData, teams, players }) {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Stats Cards */}

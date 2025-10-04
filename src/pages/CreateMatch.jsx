@@ -227,10 +227,16 @@ export default function CreateMatch() {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-cricket-500 focus:border-cricket-500"
                 >
+                    <option value={1}>1 Over</option>
                   <option value={5}>5 Overs</option>
                   <option value={10}>10 Overs</option>
                   <option value={15}>15 Overs</option>
                   <option value={20}>20 Overs (T20)</option>
+                    <option value={25}>25 Overs</option>
+                    <option value={30}>30 Overs</option>
+                    <option value={35}>35 Overs</option>
+                    <option value={40}>40 Overs</option>
+                    <option value={45}>45 Overs</option>
                   <option value={50}>50 Overs (ODI)</option>
                 </select>
               </div>

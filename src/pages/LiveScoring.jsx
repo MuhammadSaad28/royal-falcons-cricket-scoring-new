@@ -16,6 +16,7 @@ export default function LiveScoring() {
   const [loading, setLoading] = useState(true);
   const [battingTeam, setBattingTeam] = useState(null);
   const [bowlingTeam, setBowlingTeam] = useState(null);
+  const [selectedRuns, setSelectedRuns] = useState(1); // default 1 run
 
   // Modals
   const [showTossModal, setShowTossModal] = useState(false);
@@ -29,9 +30,24 @@ export default function LiveScoring() {
   const [selectedBowler, setSelectedBowler] = useState(null);
   const [selectedNewBatter, setSelectedNewBatter] = useState(null);
   const [selectedNewBowler, setSelectedNewBowler] = useState(null);
+  const [pendingBowlerChange, setPendingBowlerChange] = useState(false);
 
   const [inningActive, setInningActive] = useState(true);
   const [matchFinished, setMatchFinished] = useState(false);
+
+  const completeMatch = async () => {
+  try {
+    const matchRef = doc(db, "matches", id);
+    await updateDoc(matchRef, {
+      status: "completed",
+      completedAt: new Date(),
+    });
+    navigate("/match/" + id);
+  } catch (error) {
+    console.error("Error completing match:", error);
+    alert("Error marking match as completed. Please try again.");
+  }
+};
 
   const checkInningEnd = (currentInnings, match, inningIndex) => {
     const maxOvers = match.overs; // from matches collection
@@ -49,33 +65,6 @@ export default function LiveScoring() {
 
     return false;
   };
-
-  // const startSecondInning = async () => {
-  //   try {
-  //     const newInnings = {
-  //       teamId: bowlingTeam, // 2nd team ab batting karegi
-  //       runs: 0,
-  //       wickets: 0,
-  //       overs: 0,
-  //       totalBalls: 0,
-  //       batting: [],
-  //       bowling: [],
-  //       fielding: [],
-  //       extraRuns: { wides: 0, noBalls: 0, legByes: 0, byes: 0 },
-  //       battersOnCrease: [],
-  //       currentBowler: null,
-  //     };
-
-  //     await updateDoc(doc(db, "liveScoring", id), {
-  //       innings: [...liveData.innings, newInnings],
-  //     });
-
-  //     setInningActive(true);
-  //     setShowInitialModal(true); // opening players modal
-  //   } catch (error) {
-  //     console.error("Error starting 2nd inning:", error);
-  //   }
-  // };
 
   const startSecondInning = async () => {
     try {
@@ -182,26 +171,14 @@ export default function LiveScoring() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setLiveData(data);
-
-          // Check if initial players are set - only show modal if we have no innings data at all
-          //   const currentInnings = data.innings?.[data.innings.length - 1];
-          //   if (
-          //     !currentInnings?.battersOnCrease ||
-          //     currentInnings.battersOnCrease.length < 2 ||
-          //     !currentInnings?.currentBowler
-          //   ) {
-          //     // Only show if we haven't set initial players yet (no batting/bowling arrays)
-          //     if (
-          //       !currentInnings?.batting ||
-          //       currentInnings.batting.length === 0
-          //     ) {
-          //       setShowInitialModal(true);
-          //     }
-          //   }
           const currentInnings = data.innings?.[data.innings.length - 1];
           console.log("Current Innings:", currentInnings, " Live Data: ", data);
           setBattingTeam(currentInnings.teamId);
-          setBowlingTeam(currentInnings.teamId === matchData.team1 ? matchData.team2 : matchData.team1);
+          setBowlingTeam(
+            currentInnings.teamId === matchData.team1
+              ? matchData.team2
+              : matchData.team1
+          );
 
           if (currentInnings) {
             // agar innings abhi start hui aur batting array empty hai to modal dikhao
@@ -211,6 +188,17 @@ export default function LiveScoring() {
               (!currentInnings.bowling || currentInnings.bowling.length === 0)
             ) {
               setShowInitialModal(true);
+            }
+          }
+          // Check if inning ended
+          if (
+            checkInningEnd(currentInnings, matchData, data.innings.length - 1)
+          ) {
+            setInningActive(false);
+            if (data.innings.length === 1) {
+              // First inning khatam
+              console.log("First innings completed");
+              // startSecondInning();
             }
           }
         } else {
@@ -477,6 +465,7 @@ export default function LiveScoring() {
           setMatchFinished(true);
           console.log("Match finished!");
         }
+        return;
       }
 
       // Show new bowler modal if over completed
@@ -486,6 +475,134 @@ export default function LiveScoring() {
     } catch (error) {
       console.error("Error adding runs:", error);
       alert("Error adding runs. Please try again.");
+    }
+  };
+
+  const addExtras = async (type, runs = 1) => {
+    if (!liveData) return;
+
+    try {
+      const currentInningsIndex = liveData.innings.length - 1;
+      const currentInnings = liveData.innings[currentInningsIndex];
+      const bowler = currentInnings.currentBowler;
+
+      const updatedExtraRuns = { ...currentInnings.extraRuns };
+      let bowlerRuns = 0;
+      let totalRunsToAdd = 0;
+      let shouldIncrementBall = false;
+
+      if (type === "wide") {
+        updatedExtraRuns.wides = (updatedExtraRuns.wides || 0) + runs;
+        bowlerRuns = runs; // wides count to bowler
+        totalRunsToAdd = runs;
+        shouldIncrementBall = false;
+      } else if (type === "noball") {
+        updatedExtraRuns.noBalls = (updatedExtraRuns.noBalls || 0) + runs;
+        bowlerRuns = runs; // no balls count to bowler
+        totalRunsToAdd = runs;
+        shouldIncrementBall = false;
+      } else if (type === "byes") {
+        updatedExtraRuns.byes = (updatedExtraRuns.byes || 0) + runs;
+        totalRunsToAdd = runs; // but not bowler
+        shouldIncrementBall = true;
+      } else if (type === "legbyes") {
+        updatedExtraRuns.legByes = (updatedExtraRuns.legByes || 0) + runs;
+        totalRunsToAdd = runs; // but not bowler
+        shouldIncrementBall = true;
+      }
+
+      // Update bowling stats
+      let updatedBowling = currentInnings.bowling.map((b) => {
+        if (b.playerId === bowler) {
+          return {
+            ...b,
+            runsConceded: b.runsConceded + bowlerRuns,
+          };
+        }
+        return b;
+      });
+
+      const updatedRuns = (currentInnings.runs || 0) + totalRunsToAdd;
+      let updatedTotalBalls = currentInnings.totalBalls || 0;
+      let updatedOvers = currentInnings.overs || 0;
+      let overCompleted = false;
+
+      if (shouldIncrementBall) {
+        updatedTotalBalls += 1;
+        updatedOvers = calculateOvers(updatedTotalBalls);
+        overCompleted = updatedTotalBalls % 6 === 0;
+
+        // Bowler ki balls bhi update karo
+        updatedBowling = updatedBowling.map((b) => {
+          if (b.playerId === bowler) {
+            const totalBallsBowled = b.totalBallsBowled
+              ? b.totalBallsBowled + 1
+              : 1;
+            const newBowlerOvers = calculateOvers(totalBallsBowled);
+
+            return {
+              ...b,
+              oversBowled: newBowlerOvers,
+              totalBallsBowled,
+            };
+          }
+          return b;
+        });
+      }
+
+      // Swap striker if odd runs
+      let newBattersOnCrease = [...currentInnings.battersOnCrease];
+      if (runs % 2 === 1) {
+        newBattersOnCrease = [newBattersOnCrease[1], newBattersOnCrease[0]];
+      }
+      // Swap again if over completed
+      if (overCompleted) {
+        newBattersOnCrease = [newBattersOnCrease[1], newBattersOnCrease[0]];
+      }
+
+      const updatedInnings = [...liveData.innings];
+      updatedInnings[currentInningsIndex] = {
+        ...currentInnings,
+        bowling: updatedBowling,
+        extraRuns: updatedExtraRuns,
+        runs: updatedRuns,
+        totalBalls: updatedTotalBalls,
+        overs: updatedOvers,
+        battersOnCrease: newBattersOnCrease,
+      };
+
+      await updateDoc(doc(db, "liveScoring", id), {
+        innings: updatedInnings,
+      });
+      setSelectedRuns(1); // reset to default 1
+
+      if (shouldIncrementBall) {
+        if (
+          checkInningEnd(
+            updatedInnings[updatedInnings.length - 1],
+            match,
+            updatedInnings.length - 1
+          )
+        ) {
+          setInningActive(false);
+
+          if (updatedInnings.length === 1) {
+            console.log("First innings completed");
+          } else {
+            setMatchFinished(true);
+            console.log("Match finished!");
+          }
+          return;
+        }
+
+        // Show new bowler modal if over completed
+        if (overCompleted) {
+          setShowNewBowlerModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error adding extras:", error);
+      alert("Error adding extras. Please try again.");
     }
   };
 
@@ -571,9 +688,11 @@ export default function LiveScoring() {
           setMatchFinished(true);
           console.log("Match finished!");
         }
+        return;
       }
 
       // ✅ Show new batter modal
+
       setShowNewBatterModal(true);
 
       if (overCompleted) {
@@ -637,8 +756,12 @@ export default function LiveScoring() {
       setShowNewBatterModal(false);
 
       // Show bowler modal if over was completed
-      if (shouldShowBowlerModal) {
+      //   if (shouldShowBowlerModal) {
+      //     setShowNewBowlerModal(true);
+      //   }
+      if (pendingBowlerChange) {
         setShowNewBowlerModal(true);
+        setPendingBowlerChange(false);
       }
     } catch (error) {
       console.error("Error adding new batter:", error);
@@ -994,60 +1117,114 @@ export default function LiveScoring() {
             </div>
           </div>
         )}
-
-        {/* Run Buttons */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {[0, 1, 2, 3, 4, 6].map((r) => (
-            <button
-              key={r}
-              onClick={() => addRuns(r)}
-              className="bg-gray-100 hover:bg-gray-200 p-4 rounded text-lg font-bold transition"
-              //   disabled={!striker || !currentBowler}
-              disabled={
-                !striker || !currentBowler || !inningActive || matchFinished
-              }
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {["bowled", "caught", "runout", "stump"].map((type) => (
-            <button
-              key={type}
-              onClick={() => addWicket(type)}
-              className="bg-red-500 hover:bg-red-600 text-white p-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed capitalize"
-              //   disabled={!striker || !currentBowler}
-              disabled={
-                !striker || !currentBowler || !inningActive || matchFinished
-              }
-            >
-              {type}
-            </button>
-          ))}
-
-          {!inningActive &&
-            !matchFinished &&
-            liveData?.innings?.length === 1 && (
-              <div className="text-center mt-4">
+        {!matchFinished && (
+          <>
+            {/* Run Buttons */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[0, 1, 2, 3, 4, 6].map((r) => (
                 <button
-                  onClick={startSecondInning}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                  key={r}
+                  onClick={() => addRuns(r)}
+                  className="bg-gray-100 hover:bg-gray-200 p-4 rounded text-lg font-bold transition"
+                  //   disabled={!striker || !currentBowler}
+                  disabled={
+                    !striker || !currentBowler || !inningActive || matchFinished
+                  }
                 >
-                  Start 2nd Innings
+                  {r}
                 </button>
-              </div>
-            )}
-          {matchFinished && (
-            <div className="text-center mt-4">
-              <h2 className="text-xl font-bold text-cricket-600">
-                Match Finished!
-              </h2>
-              <p className="mt-2">Thank you for using the live scoring app.</p>
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Extras Buttons */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {["byes", "legbyes", "noball", "wide"].map((type) => {
+                return (
+                  <div key={type} className="flex flex-col items-center">
+                    <label className="text-sm font-medium capitalize">
+                      {type}
+                    </label>
+
+                    {/* Dropdown */}
+                    <select
+                      className="bg-gray-100 hover:bg-gray-200 p-2 rounded text-sm font-bold transition mb-2"
+                      value={selectedRuns}
+                      onChange={(e) =>
+                        setSelectedRuns(parseInt(e.target.value, 10))
+                      }
+                      disabled={
+                        !striker ||
+                        !currentBowler ||
+                        !inningActive ||
+                        matchFinished
+                      }
+                    >
+                      {[1, 2, 3, 4, 5, 6].map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Button */}
+                    <button
+                      onClick={() => addExtras(type, selectedRuns)}
+                      className="bg-cricket-600 text-white hover:bg-cricket-700 px-4 py-2 rounded text-sm font-bold transition"
+                      disabled={
+                        !striker ||
+                        !currentBowler ||
+                        !inningActive ||
+                        matchFinished
+                      }
+                    >
+                      Add {type}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {["bowled", "caught", "runout", "stump"].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => addWicket(type)}
+                  className="bg-red-500 hover:bg-red-600 text-white p-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed capitalize"
+                  //   disabled={!striker || !currentBowler}
+                  disabled={
+                    !striker || !currentBowler || !inningActive || matchFinished
+                  }
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {!inningActive && !matchFinished && liveData?.innings?.length === 1 && (
+          <div className="text-center mt-4">
+            <button
+              onClick={startSecondInning}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+            >
+              Start 2nd Innings
+            </button>
+          </div>
+        )}
+        {matchFinished && (
+          <div className="text-center mt-4">
+            <h2 className="text-xl font-bold text-cricket-600">
+              Match Finished!
+            </h2>
+            <p className="mt-2">Thank you for using the live scoring app.</p>
+            <button
+              onClick={() => completeMatch()}
+              className="mt-4 bg-cricket-600 hover:bg-cricket-700 text-white px-4 py-2 rounded"
+            >
+              Back to Scorecard
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

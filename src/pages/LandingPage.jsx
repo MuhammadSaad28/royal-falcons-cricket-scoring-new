@@ -1,15 +1,25 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, query, limit, getDocs, where, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
-import MatchCard from '../components/MatchCard';
-import Loading from '../components/Loading';
-import { Play, Users, Trophy, ChartBar as BarChart3 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  collection,
+  query,
+  limit,
+  getDocs,
+  where,
+  orderBy,
+  onSnapshot,
+  doc,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import MatchCard from "../components/MatchCard";
+import Loading from "../components/Loading";
+import { Play, Users, Trophy, ChartBar as BarChart3 } from "lucide-react";
 
 export default function LandingPage() {
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [liveData, setLiveData] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -19,35 +29,54 @@ export default function LandingPage() {
     try {
       // Fetch recent matches
       const matchesQuery = query(
-        collection(db, 'matches'),
-        orderBy('createdAt', 'desc'),
+        collection(db, "matches"),
+        orderBy("createdAt", "desc"),
         limit(6)
       );
       const matchesSnapshot = await getDocs(matchesQuery);
-      const matchesData = matchesSnapshot.docs.map(doc => ({
+      const matchesData = matchesSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
 
       // Fetch teams
-      const teamsSnapshot = await getDocs(collection(db, 'teams'));
-      const teamsData = teamsSnapshot.docs.map(doc => ({
+      const teamsSnapshot = await getDocs(collection(db, "teams"));
+      const teamsData = teamsSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
+      matchesData.forEach((match) => {
+        const unsubscribe = onSnapshot(
+          doc(db, "liveScoring", match.id), // yahan har match ki id pass ho rahi
+          (docSnap) => {
+            if (docSnap.exists()) {
+              // Har match ka live data state me store karo
+              setLiveData((prev) => ({
+                ...prev,
+                [match.id]: docSnap.data(),
+              }));
+            }
+          },
+          (error) => {
+            console.error("Error listening to live updates:", error);
+          }
+        );
+      });
 
       setMatches(matchesData);
       setTeams(teamsData);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const liveMatches = matches.filter(match => match.status === 'live');
-  const recentMatches = matches.filter(match => match.status === 'completed');
-  const upcomingMatches = matches.filter(match => match.status === 'upcoming');
+  const liveMatches = matches.filter((match) => match.status === "live");
+  const recentMatches = matches.filter((match) => match.status === "completed");
+  const upcomingMatches = matches.filter(
+    (match) => match.status === "upcoming"
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cricket-50 to-green-50">
@@ -60,7 +89,7 @@ export default function LandingPage() {
               World-Class Cricket Scoring
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-cricket-100">
-              Experience professional cricket scoring with real-time updates, 
+              Experience professional cricket scoring with real-time updates,
               comprehensive statistics, and broadcast-quality overlays.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -90,7 +119,8 @@ export default function LandingPage() {
               Professional Cricket Management
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to manage and score cricket matches like the professionals
+              Everything you need to manage and score cricket matches like the
+              professionals
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -100,7 +130,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Team Management</h3>
               <p className="text-gray-600">
-                Create and manage teams, players, and track comprehensive statistics
+                Create and manage teams, players, and track comprehensive
+                statistics
               </p>
             </div>
             <div className="text-center">
@@ -109,7 +140,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Live Scoring</h3>
               <p className="text-gray-600">
-                Real-time scoring with international standards and instant updates
+                Real-time scoring with international standards and instant
+                updates
               </p>
             </div>
             <div className="text-center">
@@ -142,8 +174,8 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {liveMatches.map(match => (
-                <MatchCard key={match.id} match={match} teams={teams} />
+              {liveMatches.map((match) => (
+                <MatchCard key={match.id} match={match} teams={teams} liveData={liveData[match.id] || null} />
               ))}
             </div>
           </div>
@@ -162,24 +194,28 @@ export default function LandingPage() {
               View All Matches →
             </Link>
           </div>
-          
+
           {loading ? (
             <Loading message="Loading matches..." />
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matches.slice(0, 6).map(match => (
-                <MatchCard key={match.id} match={match} teams={teams} />
+              {matches.slice(0, 6).map((match) => (
+                <MatchCard key={match.id} match={match} teams={teams} liveData={liveData[match.id] || null} />
               ))}
             </div>
           )}
-          
+
           {!loading && matches.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Trophy className="w-16 h-16 mx-auto" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No matches yet</h3>
-              <p className="text-gray-600 mb-6">Be the first to create and score a match!</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No matches yet
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Be the first to create and score a match!
+              </p>
               <Link
                 to="/signup"
                 className="bg-cricket-600 hover:bg-cricket-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
@@ -198,7 +234,8 @@ export default function LandingPage() {
             Ready to Score Like a Pro?
           </h2>
           <p className="text-xl text-cricket-100 mb-8">
-            Join thousands of cricket enthusiasts using our platform for professional match management
+            Join thousands of cricket enthusiasts using our platform for
+            professional match management
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Overlay() {
   const { id } = useParams();
@@ -10,15 +10,16 @@ export default function Overlay() {
   const [players, setPlayers] = useState({});
   const [liveData, setLiveData] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [scorecardView, setScorecardView] = useState('none'); // 'none', 'team1', 'team2', 'summary'
 
   useEffect(() => {
     // Make body transparent
-    document.body.style.backgroundColor = 'transparent';
-    document.documentElement.style.backgroundColor = 'transparent';
-    
+    document.body.style.backgroundColor = "transparent";
+    document.documentElement.style.backgroundColor = "transparent";
+
     return () => {
-      document.body.style.backgroundColor = '';
-      document.documentElement.style.backgroundColor = '';
+      document.body.style.backgroundColor = "";
+      document.documentElement.style.backgroundColor = "";
     };
   }, []);
 
@@ -27,7 +28,7 @@ export default function Overlay() {
 
     const fetchMatch = async () => {
       try {
-        const matchDoc = await getDoc(doc(db, 'matches', id));
+        const matchDoc = await getDoc(doc(db, "matches", id));
         if (!matchDoc.exists()) return;
 
         const matchData = { id: matchDoc.id, ...matchDoc.data() };
@@ -35,13 +36,17 @@ export default function Overlay() {
 
         // Fetch teams
         const [team1Doc, team2Doc] = await Promise.all([
-          getDoc(doc(db, 'teams', matchData.team1)),
-          getDoc(doc(db, 'teams', matchData.team2))
+          getDoc(doc(db, "teams", matchData.team1)),
+          getDoc(doc(db, "teams", matchData.team2)),
         ]);
 
         const teamsData = {
-          [matchData.team1]: team1Doc.exists() ? { id: team1Doc.id, ...team1Doc.data() } : null,
-          [matchData.team2]: team2Doc.exists() ? { id: team2Doc.id, ...team2Doc.data() } : null
+          [matchData.team1]: team1Doc.exists()
+            ? { id: team1Doc.id, ...team1Doc.data() }
+            : null,
+          [matchData.team2]: team2Doc.exists()
+            ? { id: team2Doc.id, ...team2Doc.data() }
+            : null,
         };
         setTeams(teamsData);
 
@@ -50,7 +55,7 @@ export default function Overlay() {
         for (const teamId of [matchData.team1, matchData.team2]) {
           const teamPlayers = teamsData[teamId]?.players || [];
           for (const playerId of teamPlayers) {
-            const playerDoc = await getDoc(doc(db, 'players', playerId));
+            const playerDoc = await getDoc(doc(db, "players", playerId));
             if (playerDoc.exists()) {
               allPlayers[playerId] = { id: playerDoc.id, ...playerDoc.data() };
             }
@@ -58,7 +63,7 @@ export default function Overlay() {
         }
         setPlayers(allPlayers);
       } catch (error) {
-        console.error('Error fetching match:', error);
+        console.error("Error fetching match:", error);
       }
     };
 
@@ -66,20 +71,20 @@ export default function Overlay() {
 
     // Listen for live scoring updates
     const unsubscribe = onSnapshot(
-      doc(db, 'liveScoring', id),
+      doc(db, "liveScoring", id),
       (doc) => {
         if (doc.exists()) {
           setLiveData(doc.data());
         }
       },
       (error) => {
-        console.error('Error listening to live updates:', error);
+        console.error("Error listening to live updates:", error);
       }
     );
 
     // Toggle details view every 10 seconds
     const interval = setInterval(() => {
-      setShowDetails(prev => !prev);
+      setShowDetails((prev) => !prev);
     }, 10000);
 
     return () => {
@@ -97,199 +102,307 @@ export default function Overlay() {
   }
 
   const currentInnings = liveData.innings[liveData.innings.length - 1];
-  const previousInnings = liveData.innings.length > 1 ? liveData.innings[0] : null;
-  
+  const previousInnings =
+    liveData.innings.length > 1 ? liveData.innings[0] : null;
+
   const battingTeamId = currentInnings.teamId;
-  const bowlingTeamId = battingTeamId === match.team1 ? match.team2 : match.team1;
-  
+  const bowlingTeamId =
+    battingTeamId === match.team1 ? match.team2 : match.team1;
+
   const battingTeam = teams[battingTeamId];
   const bowlingTeam = teams[bowlingTeamId];
 
   // Get current batsmen
   const striker = currentInnings.battersOnCrease?.[0];
   const nonStriker = currentInnings.battersOnCrease?.[1];
-  
-  const strikerStats = currentInnings.batting?.find(b => b.playerId === striker);
-  const nonStrikerStats = currentInnings.batting?.find(b => b.playerId === nonStriker);
-  
+
+  const strikerStats = currentInnings.batting?.find(
+    (b) => b.playerId === striker
+  );
+  const nonStrikerStats = currentInnings.batting?.find(
+    (b) => b.playerId === nonStriker
+  );
+
   // Get current bowler
   const currentBowler = currentInnings.currentBowler;
-  const bowlerStats = currentInnings.bowling?.find(b => b.playerId === currentBowler);
+  const bowlerStats = currentInnings.bowling?.find(
+    (b) => b.playerId === currentBowler
+  );
 
   // Calculate strike rates and economy
-  const getStrikeRate = (runs, balls) => balls > 0 ? ((runs / balls) * 100).toFixed(1) : '0.0';
-  const getEconomy = (runs, overs) => overs > 0 ? (runs / overs).toFixed(2) : '0.00';
-  
-  // Calculate current run rate
-//   const currentRunRate = currentInnings.overs > 0 
-//     ? (currentInnings.runs / currentInnings.overs).toFixed(2) 
-//     : '0.00';
-const totalBalls = currentInnings.totalBalls || 0;
-const currentRunRate =
-  totalBalls > 0
-    ? (currentInnings.runs / (totalBalls / 6)).toFixed(2)
-    : "0.00";
+  const getStrikeRate = (runs, balls) =>
+    balls > 0 ? ((runs / balls) * 100).toFixed(1) : "0.0";
+  //   const getEconomy = (runs, overs) =>
+  //     overs > 0 ? (runs / overs).toFixed(2) : "0.00";
+  const getEconomy = (runs, overs) => {
+    if (!overs || overs <= 0) return "0.00";
 
+    // overs = 0.2 means 0 overs 2 balls
+    const fullOvers = Math.floor(overs); // e.g. 0 from 0.2
+    const ballsPart = Math.round((overs % 1) * 10); // e.g. 2 from 0.2
+
+    const totalBalls = fullOvers * 6 + ballsPart;
+    const actualOvers = totalBalls / 6;
+
+    return actualOvers > 0 ? (runs / actualOvers).toFixed(2) : "0.00";
+  };
+
+  // Calculate current run rate
+  //   const currentRunRate = currentInnings.overs > 0
+  //     ? (currentInnings.runs / currentInnings.overs).toFixed(2)
+  //     : '0.00';
+  const totalBalls = currentInnings.totalBalls || 0;
+  const currentRunRate =
+    totalBalls > 0
+      ? (currentInnings.runs / (totalBalls / 6)).toFixed(2)
+      : "0.00";
 
   // Calculate partnership
-  const partnership = (strikerStats?.runsScored || 0) + (nonStrikerStats?.runsScored || 0);
-  const partnershipBalls = (strikerStats?.ballsFaced || 0) + (nonStrikerStats?.ballsFaced || 0);
+  const partnership =
+    (strikerStats?.runsScored || 0) + (nonStrikerStats?.runsScored || 0);
+  const partnershipBalls =
+    (strikerStats?.ballsFaced || 0) + (nonStrikerStats?.ballsFaced || 0);
 
   // Calculate target info (for 2nd innings)
   let targetInfo = null;
   if (previousInnings) {
     const target = previousInnings.runs + 1;
     const required = target - currentInnings.runs;
-    const ballsRemaining = (match.overs * 6) - (currentInnings.totalBalls || 0);
-    const requiredRunRate = ballsRemaining > 0 ? ((required / ballsRemaining) * 6).toFixed(2) : '0.00';
-    
+    const ballsRemaining = match.overs * 6 - (currentInnings.totalBalls || 0);
+    const requiredRunRate =
+      ballsRemaining > 0
+        ? ((required / ballsRemaining) * 6).toFixed(2)
+        : "0.00";
+
     targetInfo = {
       target,
       required: required > 0 ? required : 0,
       balls: ballsRemaining > 0 ? ballsRemaining : 0,
-      rrr: requiredRunRate
+      rrr: requiredRunRate,
     };
   }
 
-//   calculate required run rate
-  const requiredRunRate = targetInfo && targetInfo.balls > 0
-    ? ((targetInfo.required / targetInfo.balls) * 6).toFixed(2)
-    : '0.00';
+  const matchFinished =
+    targetInfo &&
+    (currentInnings.runs >= targetInfo.target ||
+      currentInnings.wickets >= match?.totalPlayersPerTeam ||
+      (currentInnings.totalBalls || 0) >= match.overs * 6);
+
+  //   calculate required run rate
+  const requiredRunRate =
+    targetInfo && targetInfo.balls > 0
+      ? ((targetInfo.required / targetInfo.balls) * 6).toFixed(2)
+      : "0.00";
 
   // Get last 6 balls (mock - you'll need to implement ball history)
-  const lastBalls = ['1', '4', '6', 'W', '0', '2'];
+  const lastBalls = ["1", "4", "6", "W", "0", "2"];
 
   return (
-//    <div className="min-h-screen bg-transparent relative overflow-hidden">
-   <div className="fixed inset-0 pointer-events-none">
- {/* Bottom Score Bar */}
-<div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto">
-  <div className="bg-black/90 border-t-4 border-emerald-500 shadow-lg">
-    {/* Top row - Teams & Score */}
-    <div className="px-6 py-3 flex items-center justify-between max-w-screen-2xl mx-auto">
-      
-      {/* Left - Batting Team */}
-      <div className="flex items-center space-x-4 flex-1">
-        <div className="bg-emerald-600 px-3 py-1 rounded-md shadow">
-          <span className="text-white font-bold uppercase text-sm">
-            {battingTeam?.name || 'Batting'}
-          </span>
-        </div>
-        <div className="flex items-baseline space-x-2">
-          <span className="text-5xl font-black text-white">
-            {currentInnings.runs}
-          </span>
-          <span className="text-3xl font-bold text-red-400">
-            /{currentInnings.wickets}
-          </span>
-          <span className="text-lg text-gray-300 ml-2">
-            ({currentInnings.overs?.toFixed(1) || '0.0'})
-          </span>
-        </div>
-        {match.status === "live" && (
-          <div className="flex items-center space-x-2 ml-4">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-            <span className="text-red-400 font-semibold text-sm">LIVE</span>
-          </div>
-        )}
-      </div>
+    //    <div className="min-h-screen bg-transparent relative overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none">
+      {/* Bottom Score Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto">
+        <div className="bg-black/90 border-t-4 border-emerald-500 shadow-lg">
+          {/* Top row - Teams & Score */}
+          <div className="px-6 py-3 flex items-center justify-between max-w-screen-2xl mx-auto">
+            {/* Left - Batting Team */}
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="bg-emerald-600 px-3 py-1 rounded-md shadow">
+                <span className="text-white font-bold uppercase text-sm">
+                  {battingTeam?.name || "Batting"}
+                </span>
+              </div>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-5xl font-black text-white">
+                  {currentInnings.runs}
+                </span>
+                <span className="text-3xl font-bold text-red-400">
+                  /{currentInnings.wickets}
+                </span>
+                <span className="text-lg text-gray-300 ml-2">
+                  ({currentInnings.overs?.toFixed(1) || "0.0"})
+                </span>
+              </div>
+              {match.status === "live" && (
+                <div className="flex items-center space-x-2 ml-4">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-red-400 font-semibold text-sm">
+                    LIVE
+                  </span>
+                </div>
+              )}
+            </div>
 
-      {/* Center - Match Info */}
-      <div className="flex flex-col items-center flex-1 text-center">
-        <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">
-          {liveData.innings.length === 1 ? "1st Innings" : "2nd Innings"} • T{match.overs}
-        </span>
-        <div className="flex items-baseline space-x-3">
-        <span className="text-yellow-400 font-black text-lg">
-          CRR: {currentRunRate}
-        </span>
-        {previousInnings && targetInfo && (
-          <span className="text-yellow-400 font-black text-lg">
-            RRR: {requiredRunRate}
-            </span>
-        )}
-        </div>
-        {/* {previousInnings && (
+            {/* Center - Match Info */}
+            <div className="flex flex-col items-center flex-1 text-center">
+              <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                {liveData.innings.length === 1 ? "1st Innings" : "2nd Innings"}{" "}
+                • T{match.overs}
+              </span>
+              {!matchFinished && (
+                <div className="flex items-baseline space-x-3">
+                  <span className="text-yellow-400 font-black text-lg">
+                    CRR: {currentRunRate}
+                  </span>
+                  {previousInnings && targetInfo && (
+                    <span className="text-yellow-400 font-black text-lg">
+                      RRR: {requiredRunRate}
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* <div className="flex flex-col items-center text-white text-sm">
+                <span className="text-gray-300">
+                  Extras: {currentInnings.extras?.wides || 0} wd,{" "}
+                  {currentInnings.extras?.noBalls || 0} nb,{" "}
+                  {currentInnings.extras?.byes || 0} b,{" "}
+                  {currentInnings.extras?.legByes || 0} lb
+                </span>
+              </div> */}
+              {matchFinished && (
+                <div className="flex flex-col items-center text-white text-xl">
+                  <span className="text-green-400 font-semibold">
+                    {currentInnings.runs >= targetInfo.target
+                      ? battingTeam?.name
+                      : bowlingTeam?.name}{" "}
+                    won by{" "}
+                    {currentInnings.runs >= targetInfo.target
+                      ? match.totalPlayersPerTeam - currentInnings.wickets - 1
+                      : targetInfo.required}{" "}
+                    {currentInnings.runs >= targetInfo.target
+                      ? "wicket"
+                      : "runs"}
+                  </span>
+                </div>
+              )}
+              {/* {previousInnings && (
           <span className="text-red-400 text-xs mt-1">
             Target {previousInnings.runs + 1}
           </span>
         )} */}
-      </div>
+            </div>
 
-      {/* Right - Bowling Team */}
-      <div className="flex items-center justify-end space-x-4 flex-1">
-        {previousInnings && (
-          <span className="text-red-400 text-xl">
-            Target {previousInnings.runs + 1}
-          </span>
-        )}
-        <div className="bg-blue-600 px-3 py-1 rounded-md shadow">
-          <span className="text-white font-bold uppercase text-sm">
-            {bowlingTeam?.name || "Bowling"}
-          </span>
-        </div>
-      </div>
-    </div>
+            {/* Right - Bowling Team */}
 
-    {/* Bottom row - Batters & Bowler */}
-    <div className="bg-slate-800 px-6 py-2 border-t border-slate-700">
-      <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
-        
-        {/* Left - Batters */}
-        <div className="flex flex-col space-y-1 text-white text-lg">
-          {strikerStats && (
-            <div className="flex items-center space-x-2">
-              <span className="text-emerald-400 font-semibold">
-                {players[striker]?.name || "Striker"} *
-              </span>
-              <span>{strikerStats.runsScored} ({strikerStats.ballsFaced})</span>
-              <span className="text-amber-400 text-sm">
-                SR: {getStrikeRate(strikerStats.runsScored, strikerStats.ballsFaced)}
-              </span>
-            </div>
-          )}
-          {nonStrikerStats && (
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-300 font-semibold">
-                {players[nonStriker]?.name || "Non-Striker"}
-              </span>
-              <span>{nonStrikerStats.runsScored} ({nonStrikerStats.ballsFaced})</span>
-              <span className="text-amber-400 text-sm">
-                SR: {getStrikeRate(nonStrikerStats.runsScored, nonStrikerStats.ballsFaced)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Center - runs required in number balls */}
-        {targetInfo && (
-            <div className="flex flex-col items-center text-white text-xl">
-               
-                <span className="text-yellow-400 font-semibold">Need {targetInfo.required} runs in {targetInfo.balls} balls</span>
-            </div>
-        )}
-
-        {/* Right - Bowler */}
-        {currentBowler && bowlerStats && (
-          <div className="text-right text-white text-lg">
-            <div className="flex flex-row gap-4 items-end">
-            <div className="font-mono">
-              {bowlerStats.oversBowled?.toFixed(1) || "0.0"}-
-              {bowlerStats.runsConceded || 0}-
-              {bowlerStats.wickets?.length || 0}
-            </div>
-            <div className="font-semibold">{players[currentBowler]?.name}</div>
-            </div>
-            <div className="text-red-400 text-xs">
-              Econ {getEconomy(bowlerStats.runsConceded, bowlerStats.oversBowled)}
+            <div className="flex items-center justify-end space-x-4 flex-1">
+              {previousInnings && (
+                <span className="text-red-400 text-xl">
+                  Target {previousInnings.runs + 1}
+                </span>
+              )}
+                <span className="text-gray-300">
+                  Extras: {currentInnings.extraRuns?.wides || 0} wd,{" "}
+                  {currentInnings.extraRuns?.noBalls || 0} nb,{" "}
+                  {currentInnings.extraRuns?.byes || 0} b,{" "}
+                  {currentInnings.extraRuns?.legByes || 0} lb
+                </span>
+              <div className="bg-blue-600 px-3 py-1 rounded-md shadow">
+                <span className="text-white font-bold uppercase text-sm">
+                  {bowlingTeam?.name || "Bowling"}
+                </span>
+                <div className="flex flex-col items-center text-white text-sm">
+              </div>
+              </div>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+          {!matchFinished && (
+            <div className="bg-slate-800 px-6 py-2 border-t border-slate-700">
+              <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
+                {/* Left - Batters */}
+                <div className="flex flex-col space-y-1 text-white text-lg">
+                  {strikerStats && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-emerald-400 font-semibold">
+                        {players[striker]?.name || "Striker"} *
+                      </span>
+                      <span>
+                        {strikerStats.runsScored} ({strikerStats.ballsFaced})
+                      </span>
+                      <span className="text-amber-400 text-sm">
+                        SR:{" "}
+                        {getStrikeRate(
+                          strikerStats.runsScored,
+                          strikerStats.ballsFaced
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {nonStrikerStats && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300 font-semibold">
+                        {players[nonStriker]?.name || "Non-Striker"}
+                      </span>
+                      <span>
+                        {nonStrikerStats.runsScored} (
+                        {nonStrikerStats.ballsFaced})
+                      </span>
+                      <span className="text-amber-400 text-sm">
+                        SR:{" "}
+                        {getStrikeRate(
+                          nonStrikerStats.runsScored,
+                          nonStrikerStats.ballsFaced
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
+                {/* Center - runs required in number balls */}
+                {/* team won by  */}
+                {matchFinished && (
+                  <div className="flex flex-col items-center text-white text-xl">
+                    <span className="text-green-400 font-semibold">
+                      {currentInnings.runs >= targetInfo.target
+                        ? battingTeam?.name
+                        : bowlingTeam?.name}{" "}
+                      won by{" "}
+                      {currentInnings.runs >= targetInfo.target
+                        ? match.totalPlayersPerTeam - currentInnings.wickets - 1
+                        : targetInfo.required}{" "}
+                      {currentInnings.runs >= targetInfo.target
+                        ? "wicket"
+                        : "runs"}
+                    </span>
+                  </div>
+                )}
+
+                {targetInfo && !matchFinished && (
+                  <div className="flex flex-col items-center text-white text-xl">
+                    <span className="text-yellow-400 font-semibold">
+                      Need {targetInfo.required} runs in {targetInfo.balls}{" "}
+                      balls
+                    </span>
+                  </div>
+                )}
+
+                {/* Right - Bowler */}
+                {currentBowler && bowlerStats && (
+                  <div className="text-right text-white text-lg">
+                    <div className="flex flex-row gap-4 items-end">
+                      <div className="font-mono">
+                        {bowlerStats.oversBowled?.toFixed(1) || "0.0"}-
+                        {bowlerStats.runsConceded || 0}-
+                        {bowlerStats.wickets?.length || 0}
+                      </div>
+                      <div className="font-semibold">
+                        {players[currentBowler]?.name}
+                      </div>
+                    </div>
+                    <div className="text-red-400 text-xs">
+                      Econ{" "}
+                      {getEconomy(
+                        bowlerStats.runsConceded,
+                        bowlerStats.oversBowled
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+    </div>
   );
 }

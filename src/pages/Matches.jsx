@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import MatchCard from '../components/MatchCard';
 import Loading from '../components/Loading';
@@ -10,6 +10,7 @@ export default function Matches() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [liveData, setLiveData] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -34,6 +35,24 @@ export default function Matches() {
         id: doc.id,
         ...doc.data()
       }));
+
+      matchesData.forEach((match) => {
+              const unsubscribe = onSnapshot(
+                doc(db, "liveScoring", match.id), // yahan har match ki id pass ho rahi
+                (docSnap) => {
+                  if (docSnap.exists()) {
+                    // Har match ka live data state me store karo
+                    setLiveData((prev) => ({
+                      ...prev,
+                      [match.id]: docSnap.data(),
+                    }));
+                  }
+                },
+                (error) => {
+                  console.error("Error listening to live updates:", error);
+                }
+              );
+            });
 
       setMatches(matchesData);
       setTeams(teamsData);
@@ -112,7 +131,7 @@ export default function Matches() {
             {filteredMatches.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredMatches.map(match => (
-                  <MatchCard key={match.id} match={match} teams={teams} />
+                  <MatchCard key={match.id} match={match} teams={teams} liveData={liveData[match.id] || null} />
                 ))}
               </div>
             ) : (
