@@ -17,6 +17,7 @@ export default function LiveScoring() {
   const [battingTeam, setBattingTeam] = useState(null);
   const [bowlingTeam, setBowlingTeam] = useState(null);
   const [selectedRuns, setSelectedRuns] = useState(1); // default 1 run
+  const [currentOverlay, setCurrentOverlay] = useState("none"); 
 
   // Modals
   const [showTossModal, setShowTossModal] = useState(false);
@@ -50,6 +51,7 @@ export default function LiveScoring() {
 };
 
   const checkInningEnd = (currentInnings, match, inningIndex) => {
+    if (!currentInnings || !match || !liveData) return false;
     const maxOvers = match.overs; // from matches collection
     const totalPlayers = match.totalPlayersPerTeam;
 
@@ -117,7 +119,6 @@ export default function LiveScoring() {
       }
       const matchData = { id: matchDoc.id, ...matchDoc.data() };
       setMatch(matchData);
-      console.log("Match Data:", matchData);
 
       // Fetch teams
       const [team1Doc, team2Doc] = await Promise.all([
@@ -172,7 +173,6 @@ export default function LiveScoring() {
           const data = docSnap.data();
           setLiveData(data);
           const currentInnings = data.innings?.[data.innings.length - 1];
-          console.log("Current Innings:", currentInnings, " Live Data: ", data);
           setBattingTeam(currentInnings.teamId);
           setBowlingTeam(
             currentInnings.teamId === matchData.team1
@@ -197,7 +197,6 @@ export default function LiveScoring() {
             setInningActive(false);
             if (data.innings.length === 1) {
               // First inning khatam
-              console.log("First innings completed");
               // startSecondInning();
             }
           }
@@ -459,11 +458,9 @@ export default function LiveScoring() {
 
         if (updatedInnings.length === 1) {
           // First inning khatam
-          console.log("First innings completed");
         } else {
           // Second innings khatam → match finish
           setMatchFinished(true);
-          console.log("Match finished!");
         }
         return;
       }
@@ -587,10 +584,8 @@ export default function LiveScoring() {
           setInningActive(false);
 
           if (updatedInnings.length === 1) {
-            console.log("First innings completed");
           } else {
             setMatchFinished(true);
-            console.log("Match finished!");
           }
           return;
         }
@@ -682,11 +677,9 @@ export default function LiveScoring() {
 
         if (updatedInnings.length === 1) {
           // First inning khatam
-          console.log("First innings completed");
         } else {
           // Second innings khatam → match finish
           setMatchFinished(true);
-          console.log("Match finished!");
         }
         return;
       }
@@ -823,22 +816,28 @@ export default function LiveScoring() {
     }
   };
 
-  const undoLastBall = async () => {
-    if (!liveData) return;
-
-    if (!window.confirm("Are you sure you want to undo the last ball?")) {
-      return;
-    }
-
+ const setOverlayType = async (overlayType) => {
     try {
-      alert(
-        "Undo feature requires ball-by-ball history tracking. This will be implemented with a balls history array."
-      );
+        const liveRef = doc(db, "liveScoring", id);
+    await updateDoc(liveRef, {
+      overlayType: overlayType,
+    });
+    setCurrentOverlay(overlayType);
+     
     } catch (error) {
-      console.error("Error undoing last ball:", error);
-      alert("Error undoing last ball. Please try again.");
-    }
+      console.error("Error updating overlay type:", error);
+    } 
   };
+
+  // 🟡 Buttons UI
+  const overlayButtons = [
+    { label: "Score", type: "none" },
+    { label: "Team 1 Batting", type: "team1_batting" },
+    { label: "Team 1 Bowling", type: "team1_bowling" },
+    { label: "Team 2 Batting", type: "team2_batting" },
+    { label: "Team 2 Bowling", type: "team2_bowling" },
+    { label: "Summary", type: "summary" },
+  ];
 
   if (loading) return <Loading message="Loading match..." />;
 
@@ -1159,7 +1158,7 @@ export default function LiveScoring() {
                         matchFinished
                       }
                     >
-                      {[1, 2, 3, 4, 5, 6].map((r) => (
+                      {[1, 2, 3, 4, 5, 6, 7].map((r) => (
                         <option key={r} value={r}>
                           {r}
                         </option>
@@ -1201,6 +1200,28 @@ export default function LiveScoring() {
             </div>
           </>
         )}
+        {/* set overlay buttons // 'none', 'team1_batting', 'team1_bowling', 'team2_batting', 'team2_bowling', 'summary' */}
+        {/* header for overlay */}
+        <h3 className="text-lg font-semibold text-black-200 mb-2">Live Stream Overlay</h3>
+<div className="grid grid-cols-5 gap-3 mb-4">
+ {overlayButtons.map((btn) => (
+        <button
+          key={btn.type}
+          onClick={() => setOverlayType(btn.type)}
+          disabled={loading}
+          className={`px-4 py-2 rounded-md font-semibold text-sm transition-all
+            ${currentOverlay === btn.type
+              ? "bg-emerald-500 text-white"
+              : "bg-gray-700 text-gray-200 hover:bg-emerald-600"}
+            ${loading ? "opacity-50 cursor-not-allowed" : ""}
+          `}
+        >
+          {btn.label}
+        </button>
+      ))}
+</div>
+        
+
         {!inningActive && !matchFinished && liveData?.innings?.length === 1 && (
           <div className="text-center mt-4">
             <button

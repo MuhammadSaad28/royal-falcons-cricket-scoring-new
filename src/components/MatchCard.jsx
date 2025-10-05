@@ -21,11 +21,7 @@ export default function MatchCard({ match, teams, compact = false, liveData }) {
    const innings1 = liveData?.innings?.find(inn => inn.teamId === match.team1);
   const innings2 = liveData?.innings?.find(inn => inn.teamId === match.team2)
 
-  console.log("Match Data:", match);
-  console.log("Teams Data:", teams);
-    console.log("Team 1:", team1);
-    console.log("Team 2:", team2);
-    // console.log("Live Data:", liveData);
+
 
   return (
     <Link to={`/match/${match.id}`}>

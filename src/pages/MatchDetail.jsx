@@ -116,7 +116,6 @@ export default function MatchDetail() {
   // Calculate run rate
   const currentRunRate = currentInnings?.overs > 0 && currentInnings?.wickets < match.totalPlayersPerTeam - 1 ? (currentInnings.runs / currentInnings.overs).toFixed(2) : currentInnings?.overs > 0 && currentInnings?.wickets >= match.totalPlayersPerTeam - 1 ? (currentInnings.runs / match.overs) : '0.00';
 
-  console.log("Current Run Rate:", currentRunRate);
   // const currentRunRate = currentInnings?.overs > 0 
   //   ? (currentInnings.runs / currentInnings.overs).toFixed(2) 
   //   : '0.00';
@@ -187,13 +186,13 @@ export default function MatchDetail() {
                     <Play className="w-4 h-4 mr-2" />
                     {match.status === 'upcoming' ? 'Start' : 'Score'}
                   </Link>
-                  <Link
+                  {/* <Link
                     to={`/match/${match.id}/settings`}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all hover:scale-105 flex items-center shadow-lg"
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
-                  </Link>
+                  </Link> */}
                 </>
               )}
             </div>
@@ -288,7 +287,7 @@ export default function MatchDetail() {
                     </div>
                     <div className="text-white text-2xl font-black mb-1">
                       {liveData?.innings?.length === 2
-                        ? (previousInnings.runs > currentInnings.runs ? team1?.name : team2?.name) + ' Won'
+                        ? (previousInnings.runs > currentInnings.runs ? team2?.name : team1?.name) + ' Won'
                         : 'Draw'}
                     </div>
                   </div>

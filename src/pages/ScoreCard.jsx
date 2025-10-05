@@ -35,11 +35,6 @@ export default function ScoreCard({ match, liveData, teams, players }) {
   const bowlingTeamId = innings.teamId === match.team1 ? match.team2 : match.team1;
   const bowlingTeam = teams[bowlingTeamId];
 
-//   const currentRunRate = innings.overs > 0 
-//     ? (innings.runs / innings.overs).toFixed(2) 
-//     : '0.00';
-
-// const currentRunRate = innings?.overs > 0 && innings?.wickets < match.totalPlayersPerTeam - 1 ? (innings.runs / innings.overs).toFixed(2) : innings?.overs > 0 && innings?.wickets >= match.totalPlayersPerTeam - 1 ? (innings.runs / match.overs) : '0.00';
 const totalBalls = innings?.totalBalls || 0; // innings ke andar balls ka field hai
 const oversFraction = totalBalls / 6; // balls ko overs me convert karo
 
