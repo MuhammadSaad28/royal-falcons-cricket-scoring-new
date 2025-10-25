@@ -319,33 +319,33 @@ const renderMatchFinishedCard = () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center pointer-events-auto animate-fade-in">
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 max-w-4xl w-full mx-4 border-4 border-emerald-500">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 max-w-4xl w-full mx-4 border-4 border-emerald-500 h-5/6">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-1">
           <div className="inline-block bg-emerald-500 px-6 py-2 rounded-full mb-4">
-            <span className="text-white font-bold text-lg uppercase tracking-wider">
+            <span className="text-white font-bold text-xs uppercase tracking-wider">
               Match Finished
             </span>
           </div>
-          <h1 className="text-emerald-400 text-5xl font-black mb-2">
+          <h1 className="text-emerald-400 text-1xl font-black mb-2">
             {winner} Won!
           </h1>
-          <p className="text-white text-2xl">by {margin}</p>
+          <p className="text-white text-1xl">by {margin}</p>
         </div>
 
         {/* Scores */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-slate-800/50 rounded-xl p-4 text-center border-2 border-blue-500">
-            <div className="text-blue-400 text-lg font-bold mb-2">{team1Data?.name}</div>
-            <div className="text-white text-4xl font-black">
+            <div className="text-blue-400 text-sm font-bold">{team1Data?.name}</div>
+            <div className="text-white text-2xl font-black">
               {innings1.runs}/{innings1.wickets}
             </div>
             <div className="text-gray-400">({innings1.overs?.toFixed(1)} ov)</div>
           </div>
           
           <div className="bg-slate-800/50 rounded-xl p-4 text-center border-2 border-red-500">
-            <div className="text-red-400 text-lg font-bold mb-2">{team2Data?.name}</div>
-            <div className="text-white text-4xl font-black">
+            <div className="text-red-400 text-sm font-bold">{team2Data?.name}</div>
+            <div className="text-white text-2xl font-black">
               {innings2.runs}/{innings2.wickets}
             </div>
             <div className="text-gray-400">({innings2.overs?.toFixed(1)} ov)</div>
@@ -354,7 +354,7 @@ const renderMatchFinishedCard = () => {
 
         {/* Top Performers */}
         <div className="bg-slate-800/30 rounded-2xl p-6">
-          <h3 className="text-yellow-400 text-xl font-bold mb-4 text-center">Match Stars</h3>
+          {/* <h3 className="text-yellow-400 text-xl font-bold mb-4 text-center">Match Stars</h3> */}
           
           <div className="grid grid-cols-2 gap-4">
             {/* Top Batsmen */}
@@ -362,14 +362,16 @@ const renderMatchFinishedCard = () => {
               <div className="text-green-400 text-sm font-bold mb-3">TOP BATSMEN</div>
               <div className="space-y-2">
                 {allBatsmen.map((batsman, idx) => (
-                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3 flex justify-between">
                     <div className="text-white font-bold">{players[batsman.playerId]?.name}</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-white text-2xl font-black">{batsman.runsScored}</span>
-                      <span className="text-gray-400">({batsman.ballsFaced})</span>
+                    <div className="flex items-baseline gap-2 flex-col">
+                      <div>
                       <span className="text-yellow-400 text-sm ml-auto">
                         SR: {calculateStrikeRate(batsman.runsScored, batsman.ballsFaced)}
                       </span>
+                      <span className="text-white text-2xl font-black ml-4">{batsman.runsScored}</span>
+                      <span className="text-gray-400">({batsman.ballsFaced})</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -381,7 +383,7 @@ const renderMatchFinishedCard = () => {
               <div className="text-red-400 text-sm font-bold mb-3">TOP BOWLERS</div>
               <div className="space-y-2">
                 {allBowlers.map((bowler, idx) => (
-                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3 flex justify-between">
                     <div className="text-white font-bold">{players[bowler.playerId]?.name}</div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-white text-2xl font-black">
