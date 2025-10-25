@@ -36,6 +36,8 @@ export default function LiveScoring() {
   const [inningActive, setInningActive] = useState(true);
   const [matchFinished, setMatchFinished] = useState(false);
 
+ 
+
   const completeMatch = async () => {
   try {
     const matchRef = doc(db, "matches", id);
@@ -198,6 +200,9 @@ export default function LiveScoring() {
             if (data.innings.length === 1) {
               // First inning khatam
               // startSecondInning();
+            }else if (data.innings.length === 2) {
+        // Second innings khatam - match finished
+        setMatchFinished(true);
             }
           }
         } else {
@@ -1234,7 +1239,7 @@ export default function LiveScoring() {
         {/* set overlay buttons // 'none', 'team1_batting', 'team1_bowling', 'team2_batting', 'team2_bowling', 'summary' */}
         {/* header for overlay */}
         <h3 className="text-lg font-semibold text-black-200 mb-2">Live Stream Overlay</h3>
-<div className="grid grid-cols-5 gap-3 mb-4">
+<div className="grid grid-cols-4 gap-3 mb-4">
  {overlayButtons.map((btn) => (
         <button
           key={btn.type}
