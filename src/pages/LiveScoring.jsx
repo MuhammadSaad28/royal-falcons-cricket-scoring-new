@@ -36,7 +36,12 @@ export default function LiveScoring() {
   const [inningActive, setInningActive] = useState(true);
   const [matchFinished, setMatchFinished] = useState(false);
 
- 
+//  if match finished than navigate to match summary match/{id}
+  useEffect(() => {
+    if (matchFinished) {
+      navigate("/match/" + id);
+    }
+  }, [matchFinished, id, navigate]);
 
   const completeMatch = async () => {
   try {
