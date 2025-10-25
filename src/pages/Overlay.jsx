@@ -326,8 +326,7 @@ if (!liveData) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br pointer-events-auto animate-fade-in">
         {/* TV-Style Batting Scorecard */}
-        {/* <div className="w-full h-full flex flex-col p-8"> */}
-        <div className="w-full h-5/6 flex flex-col p-6">
+        <div className="w-full h-full flex flex-col p-8">
           {/* Header Bar */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-2 rounded-t-xl flex items-center justify-between">
             <div className="flex items-baseline gap-6">
