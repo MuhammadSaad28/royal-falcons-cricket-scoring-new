@@ -10,6 +10,7 @@ export default function Overlay() {
   const [players, setPlayers] = useState({});
   const [liveData, setLiveData] = useState(null);
   const [scorecardView, setScorecardView] = useState("none"); // 'none', 'team1_batting', 'team1_bowling', 'team2_batting', 'team2_bowling', 'summary'
+  const [showMatchCard, setShowMatchCard] = useState(true);
 
   useEffect(() => {
     // Make body transparent
@@ -101,6 +102,9 @@ export default function Overlay() {
           if (data.overlayType) {
             setScorecardView(data.overlayType);
           }
+          if (data.innings && data.innings.length > 0) {
+        setShowMatchCard(false);
+      }
         }
       },
       (error) => {
@@ -119,13 +123,89 @@ export default function Overlay() {
     }
   }, [liveData]);
 
-  if (!match || !liveData) {
-    return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <div className="text-white text-xl animate-pulse">Loading...</div>
+  const renderMatchCard = () => {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center pointer-events-auto animate-fade-in">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 border-4 border-emerald-500">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-block bg-emerald-500 px-6 py-2 rounded-full mb-4">
+            <span className="text-white font-bold text-sm uppercase tracking-wider">
+              T{match.overs} Match
+            </span>
+          </div>
+          <h1 className="text-white text-4xl font-black mb-2">
+            {teams[match.team1]?.name} vs {teams[match.team2]?.name}
+          </h1>
+          <p className="text-gray-400 text-lg">{match.venue || 'Cricket Stadium'}</p>
+        </div>
+
+        {/* Teams Display */}
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="bg-slate-800/50 rounded-xl p-6 text-center border-2 border-blue-500">
+            <h3 className="text-blue-400 text-2xl font-bold mb-2">{teams[match.team1]?.name}</h3>
+            <div className="text-gray-400 text-sm">{teams[match.team1]?.players?.length || 0} Players</div>
+          </div>
+          <div className="bg-slate-800/50 rounded-xl p-6 text-center border-2 border-red-500">
+            <h3 className="text-red-400 text-2xl font-bold mb-2">{teams[match.team2]?.name}</h3>
+            <div className="text-gray-400 text-sm">{teams[match.team2]?.players?.length || 0} Players</div>
+          </div>
+        </div>
+
+        {/* Match Details */}
+        <div className="bg-slate-800/50 rounded-xl p-6 space-y-3">
+          <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+            <span className="text-gray-400">Format</span>
+            <span className="text-white font-bold">T{match.overs}</span>
+          </div>
+          <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+            <span className="text-gray-400">Players per Team</span>
+            <span className="text-white font-bold">{match.totalPlayersPerTeam}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400">Status</span>
+            <span className="text-yellow-400 font-bold uppercase">{match.status}</span>
+          </div>
+        </div>
+
+        {/* Waiting Message */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center space-x-2 bg-emerald-500/20 px-6 py-3 rounded-full">
+            <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span className="text-emerald-400 font-semibold">Waiting for match to start...</span>
+          </div>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+};
+
+  // if (!match || !liveData) {
+  //   return (
+  //     <div className="min-h-screen bg-transparent flex items-center justify-center">
+  //       <div className="text-white text-xl animate-pulse">
+  //         {renderMatchCard()}
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  if (!match) {
+  return (
+    <div className="min-h-screen bg-transparent flex items-center justify-center">
+      <div className="text-white text-xl animate-pulse">Loading...</div>
+    </div>
+  );
+}
+
+// Show match card if match exists but no live data yet
+if (!liveData) {
+  return (
+    <div className="fixed inset-0 pointer-events-none">
+      {renderMatchCard()}
+    </div>
+  );
+}
 
 
   const currentInnings = liveData.innings[liveData.innings.length - 1];
@@ -227,6 +307,8 @@ export default function Overlay() {
     };
   };
 
+  
+
   const renderBattingScorecard = (inningsIndex) => {
     const data = getInningsData(inningsIndex);
     if (!data) return null;
@@ -244,7 +326,8 @@ export default function Overlay() {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br pointer-events-auto animate-fade-in">
         {/* TV-Style Batting Scorecard */}
-        <div className="w-full h-full flex flex-col p-8">
+        {/* <div className="w-full h-full flex flex-col p-8"> */}
+        <div className="w-full h-5/6 flex flex-col p-6">
           {/* Header Bar */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-2 rounded-t-xl flex items-center justify-between">
             <div className="flex items-baseline gap-6">
@@ -791,6 +874,7 @@ export default function Overlay() {
 
   return (
     <div className="fixed inset-0 pointer-events-none">
+       {/* {showMatchCard && renderMatchCard()} */}
       {/* Render scorecard views */}
       {scorecardView === "team1_batting" && renderBattingScorecard(0)}
       {scorecardView === "team1_bowling" && renderBowlingScorecard(0)}

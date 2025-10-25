@@ -816,6 +816,28 @@ export default function LiveScoring() {
     }
   };
 
+ const swapBattersInDB = async () => {
+  try {
+    const currentInnings = liveData.innings[liveData.innings.length - 1];
+    const striker = currentInnings.battersOnCrease[0];
+    const nonStriker = currentInnings.battersOnCrease[1];
+    
+    // Swap the batters
+    const updatedInnings = [...liveData.innings];
+    updatedInnings[updatedInnings.length - 1] = {
+      ...currentInnings,
+      battersOnCrease: [nonStriker, striker]
+    };
+    
+    const liveRef = doc(db, "liveScoring", id);
+    await updateDoc(liveRef, {
+      innings: updatedInnings
+    });
+  } catch (error) {
+    console.error("Error swapping batters in DB:", error);
+  }
+};
+
  const setOverlayType = async (overlayType) => {
     try {
         const liveRef = doc(db, "liveScoring", id);
@@ -1118,11 +1140,20 @@ export default function LiveScoring() {
         )}
         {!matchFinished && (
           <>
-            {/* Run Buttons */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[0, 1, 2, 3, 4, 6].map((r) => (
-                <button
-                  key={r}
+          {/* swap batters button in db */}
+          <div className="mb-4">
+            <button
+             onClick={() => swapBattersInDB()}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded w-full transition"
+            >
+              Swap Batters
+            </button>
+          </div>
+          {/* Run Buttons */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[0, 1, 2, 3, 4, 5, 6].map((r) => (
+              <button
+                key={r}
                   onClick={() => addRuns(r)}
                   className="bg-gray-100 hover:bg-gray-200 p-4 rounded text-lg font-bold transition"
                   //   disabled={!striker || !currentBowler}

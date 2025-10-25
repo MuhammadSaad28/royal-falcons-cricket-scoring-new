@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, query, where, getDocs, arrayUnion, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { User } from 'lucide-react';
+import { User, Plus, X } from 'lucide-react';
 
 export default function CreatePlayer() {
-  const [playerName, setPlayerName] = useState('');
+  const [players, setPlayers] = useState([{ name: '' }, { name: '' }]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,11 +35,31 @@ export default function CreatePlayer() {
     }
   };
 
+  const addPlayerField = () => {
+    setPlayers([...players, { name: '' }]);
+  };
+
+  const removePlayerField = (index) => {
+    if (players.length > 1) {
+      const newPlayers = players.filter((_, i) => i !== index);
+      setPlayers(newPlayers);
+    }
+  };
+
+  const updatePlayerName = (index, name) => {
+    const newPlayers = [...players];
+    newPlayers[index].name = name;
+    setPlayers(newPlayers);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!playerName.trim()) {
-      setError('Player name is required');
+    // Filter out empty player names
+    const validPlayers = players.filter(player => player.name.trim() !== '');
+
+    if (validPlayers.length === 0) {
+      setError('Please enter at least one player name');
       return;
     }
 
@@ -52,33 +72,40 @@ export default function CreatePlayer() {
     setError('');
 
     try {
-     const playerRef =  await addDoc(collection(db, 'players'), {
-        name: playerName.trim(),
-        teamId: selectedTeam,
-        createdBy: currentUser.uid,
-        totalRunsScored: 0,
-        totalMatches: 0,
-        totalInnings: 0,
-        totalBallsFaced: 0,
-        totalRunsGiven: 0,
-        totalOversBowled: 0,
-        totalWickets: 0,
-        totalSixesHit: 0,
-        totalFoursHit: 0,
-        totalSixesConceded: 0,
-        totalFoursConceded: 0,
-        createdAt: new Date()
-      });
+      // Create all players in batch
+      const playerPromises = validPlayers.map(player =>
+        addDoc(collection(db, 'players'), {
+          name: player.name.trim(),
+          teamId: selectedTeam,
+          createdBy: currentUser.uid,
+          totalRunsScored: 0,
+          totalMatches: 0,
+          totalInnings: 0,
+          totalBallsFaced: 0,
+          totalRunsGiven: 0,
+          totalOversBowled: 0,
+          totalWickets: 0,
+          totalSixesHit: 0,
+          totalFoursHit: 0,
+          totalSixesConceded: 0,
+          totalFoursConceded: 0,
+          createdAt: new Date()
+        })
+      );
 
+      const playerRefs = await Promise.all(playerPromises);
+      const playerIds = playerRefs.map(ref => ref.id);
+
+      // Update team document with all player IDs at once
       const teamRef = doc(db, "teams", selectedTeam);
-await updateDoc(teamRef, {
-  players: arrayUnion(playerRef.id)
-});
+      await updateDoc(teamRef, {
+        players: arrayUnion(...playerIds)
+      });
 
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error creating player:', error);
-      setError('Failed to create player. Please try again.');
+      console.error('Error creating players:', error);
+      setError('Failed to create players. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -113,8 +140,8 @@ await updateDoc(teamRef, {
               <User className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Add New Player</h1>
-              <p className="text-gray-600">Add a player to one of your teams</p>
+              <h1 className="text-2xl font-bold text-gray-900">Add New Players</h1>
+              <p className="text-gray-600">Add multiple players to your team at once</p>
             </div>
           </div>
 
@@ -125,21 +152,6 @@ await updateDoc(teamRef, {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="playerName" className="block text-sm font-medium text-gray-700 mb-2">
-                Player Name *
-              </label>
-              <input
-                type="text"
-                id="playerName"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter player name"
-                required
-              />
-            </div>
-
             <div>
               <label htmlFor="team" className="block text-sm font-medium text-gray-700 mb-2">
                 Select Team *
@@ -160,6 +172,44 @@ await updateDoc(teamRef, {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Player Names *
+              </label>
+              <div className="space-y-3">
+                {players.map((player, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={player.name}
+                      onChange={(e) => updatePlayerName(index, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={`Player ${index + 1} name`}
+                    />
+                    {players.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePlayerField(index)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        title="Remove player"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <button
+                type="button"
+                onClick={addPlayerField}
+                className="mt-3 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Another Player
+              </button>
+            </div>
+
             <div className="flex gap-4">
               <button
                 type="button"
@@ -173,7 +223,7 @@ await updateDoc(teamRef, {
                 disabled={loading}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
               >
-                {loading ? 'Adding...' : 'Add Player'}
+                {loading ? 'Adding Players...' : `Add ${players.filter(p => p.name.trim()).length || 'Players'}`}
               </button>
             </div>
           </form>
