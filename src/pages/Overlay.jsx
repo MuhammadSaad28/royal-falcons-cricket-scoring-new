@@ -46,6 +46,22 @@ export default function Overlay() {
     return () => document.head.removeChild(style);
   }, []);
 
+  const checkInningEnd = (currentInnings, match, inningIndex) => {
+  if (!currentInnings || !match || !liveData) return false;
+  const maxOvers = match.overs;
+  const totalPlayers = match.totalPlayersPerTeam;
+
+  if (currentInnings.wickets >= totalPlayers - 1) return true;
+  if (currentInnings.overs >= maxOvers) return true;
+
+  if (inningIndex === 1) {
+    const firstInnings = liveData.innings[0];
+    if (currentInnings.runs > firstInnings.runs) return true;
+  }
+
+  return false;
+};
+
   useEffect(() => {
     if (!id) return;
 
@@ -180,6 +196,213 @@ export default function Overlay() {
   );
 };
 
+const renderInningsEndCard = () => {
+  console.log("Rendering Innings End Card");
+  const innings1 = liveData.innings[0];
+  const team1Id = innings1.teamId;
+  const team1Data = teams[team1Id];
+  
+  // Get top performers from first innings
+  const topBatsman = innings1.batting
+    ?.filter((b) => b.runsScored > 0)
+    .sort((a, b) => b.runsScored - a.runsScored)[0];
+  
+  const topBowler = innings1.bowling
+    ?.filter((b) => b.oversBowled > 0)
+    .sort((a, b) => 
+      (b.wickets?.length || 0) - (a.wickets?.length || 0) ||
+      (a.runsConceded || 999) - (b.runsConceded || 999)
+    )[0];
+
+  const target = innings1.runs + 1;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center pointer-events-auto animate-fade-in">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 border-4 border-yellow-500">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="inline-block bg-yellow-500 px-6 py-2 rounded-full mb-4">
+            <span className="text-white font-bold text-lg uppercase tracking-wider">
+              1st Innings Complete
+            </span>
+          </div>
+          <h1 className="text-white text-5xl font-black mb-2">
+            {team1Data?.name}: {innings1.runs}/{innings1.wickets}
+          </h1>
+          <p className="text-gray-400 text-xl">({innings1.overs?.toFixed(1)} overs)</p>
+        </div>
+
+        {/* Target */}
+        <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-2xl p-6 mb-6 text-center">
+          <div className="text-red-200 text-sm uppercase mb-2">Target</div>
+          <div className="text-white text-6xl font-black">{target}</div>
+          <div className="text-red-200 text-lg mt-2">runs to win</div>
+        </div>
+
+        {/* Top Performers */}
+        <div className="grid grid-cols-2 gap-4">
+          {topBatsman && (
+            <div className="bg-slate-800/50 rounded-xl p-4 border-2 border-green-500">
+              <div className="text-green-400 text-sm font-bold mb-2">TOP SCORER</div>
+              <div className="text-white text-2xl font-bold mb-1">
+                {players[topBatsman.playerId]?.name}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-white text-3xl font-black">{topBatsman.runsScored}</span>
+                <span className="text-gray-400">({topBatsman.ballsFaced})</span>
+              </div>
+              <div className="text-yellow-400 text-sm mt-1">
+                SR: {calculateStrikeRate(topBatsman.runsScored, topBatsman.ballsFaced)}
+              </div>
+            </div>
+          )}
+          
+          {topBowler && (
+            <div className="bg-slate-800/50 rounded-xl p-4 border-2 border-red-500">
+              <div className="text-red-400 text-sm font-bold mb-2">TOP BOWLER</div>
+              <div className="text-white text-2xl font-bold mb-1">
+                {players[topBowler.playerId]?.name}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-white text-3xl font-black">
+                  {topBowler.wickets?.length || 0}/{topBowler.runsConceded}
+                </span>
+              </div>
+              <div className="text-yellow-400 text-sm mt-1">
+                Econ: {getEconomy(topBowler.runsConceded, topBowler.oversBowled)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const renderMatchFinishedCard = () => {
+  const innings1 = liveData.innings[0];
+  const innings2 = liveData.innings[1];
+  
+  const team1Id = innings1.teamId;
+  const team2Id = team1Id === match.team1 ? match.team2 : match.team1;
+  
+  const team1Data = teams[team1Id];
+  const team2Data = teams[team2Id];
+  
+  // Determine winner
+  const target = innings1.runs + 1;
+  let winner, margin, winnerTeam;
+  
+  if (innings2.runs >= target) {
+    winner = team2Data?.name;
+    winnerTeam = team2Id;
+    margin = `${match.totalPlayersPerTeam - innings2.wickets} wickets`;
+  } else {
+    winner = team1Data?.name;
+    winnerTeam = team1Id;
+    margin = `${target - innings2.runs - 1} runs`;
+  }
+  
+  // Get top performers
+  const allBatsmen = [...innings1.batting, ...(innings2.batting || [])]
+    .filter(b => b.runsScored > 0)
+    .sort((a, b) => b.runsScored - a.runsScored)
+    .slice(0, 2);
+  
+  const allBowlers = [...innings1.bowling, ...(innings2.bowling || [])]
+    .filter(b => b.oversBowled > 0)
+    .sort((a, b) => 
+      (b.wickets?.length || 0) - (a.wickets?.length || 0) ||
+      (a.runsConceded || 999) - (b.runsConceded || 999)
+    )
+    .slice(0, 2);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center pointer-events-auto animate-fade-in">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 max-w-4xl w-full mx-4 border-4 border-emerald-500">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="inline-block bg-emerald-500 px-6 py-2 rounded-full mb-4">
+            <span className="text-white font-bold text-lg uppercase tracking-wider">
+              Match Finished
+            </span>
+          </div>
+          <h1 className="text-emerald-400 text-5xl font-black mb-2">
+            {winner} Won!
+          </h1>
+          <p className="text-white text-2xl">by {margin}</p>
+        </div>
+
+        {/* Scores */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-slate-800/50 rounded-xl p-4 text-center border-2 border-blue-500">
+            <div className="text-blue-400 text-lg font-bold mb-2">{team1Data?.name}</div>
+            <div className="text-white text-4xl font-black">
+              {innings1.runs}/{innings1.wickets}
+            </div>
+            <div className="text-gray-400">({innings1.overs?.toFixed(1)} ov)</div>
+          </div>
+          
+          <div className="bg-slate-800/50 rounded-xl p-4 text-center border-2 border-red-500">
+            <div className="text-red-400 text-lg font-bold mb-2">{team2Data?.name}</div>
+            <div className="text-white text-4xl font-black">
+              {innings2.runs}/{innings2.wickets}
+            </div>
+            <div className="text-gray-400">({innings2.overs?.toFixed(1)} ov)</div>
+          </div>
+        </div>
+
+        {/* Top Performers */}
+        <div className="bg-slate-800/30 rounded-2xl p-6">
+          <h3 className="text-yellow-400 text-xl font-bold mb-4 text-center">Match Stars</h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {/* Top Batsmen */}
+            <div>
+              <div className="text-green-400 text-sm font-bold mb-3">TOP BATSMEN</div>
+              <div className="space-y-2">
+                {allBatsmen.map((batsman, idx) => (
+                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                    <div className="text-white font-bold">{players[batsman.playerId]?.name}</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-white text-2xl font-black">{batsman.runsScored}</span>
+                      <span className="text-gray-400">({batsman.ballsFaced})</span>
+                      <span className="text-yellow-400 text-sm ml-auto">
+                        SR: {calculateStrikeRate(batsman.runsScored, batsman.ballsFaced)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Top Bowlers */}
+            <div>
+              <div className="text-red-400 text-sm font-bold mb-3">TOP BOWLERS</div>
+              <div className="space-y-2">
+                {allBowlers.map((bowler, idx) => (
+                  <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                    <div className="text-white font-bold">{players[bowler.playerId]?.name}</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-white text-2xl font-black">
+                        {bowler.wickets?.length || 0}/{bowler.runsConceded}
+                      </span>
+                      <span className="text-gray-400">({bowler.oversBowled?.toFixed(1)})</span>
+                      <span className="text-yellow-400 text-sm ml-auto">
+                        Econ: {getEconomy(bowler.runsConceded, bowler.oversBowled)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   // if (!match || !liveData) {
   //   return (
   //     <div className="min-h-screen bg-transparent flex items-center justify-center">
@@ -274,11 +497,16 @@ if (!liveData) {
     };
   }
 
-  const matchFinished =
-    targetInfo &&
-    (currentInnings.runs >= targetInfo.target ||
-      currentInnings.wickets >= match?.totalPlayersPerTeam ||
-      (currentInnings.totalBalls || 0) >= match.overs * 6);
+  // const matchFinished =
+  //   targetInfo &&
+  //   (currentInnings.runs >= targetInfo.target ||
+  //     currentInnings.wickets >= match?.totalPlayersPerTeam ||
+  //     (currentInnings.totalBalls || 0) >= match.overs * 6);
+
+  // Calculate if match is finished
+const matchFinished = 
+  liveData.innings.length === 2 && 
+  checkInningEnd(currentInnings, match, 1);
 
   const requiredRunRate =
     targetInfo && targetInfo.balls > 0
@@ -874,6 +1102,17 @@ if (!liveData) {
   return (
     <div className="fixed inset-0 pointer-events-none">
        {/* {showMatchCard && renderMatchCard()} */}
+
+       {/* Show innings end card when first innings complete and second hasn't started */}
+    {liveData.innings.length === 1 && 
+     checkInningEnd(currentInnings, match, 0) && 
+     renderInningsEndCard()}
+    
+    {/* Show match finished card when match is complete */}
+    {matchFinished && renderMatchFinishedCard()}
+    
+     {!checkInningEnd(currentInnings, match, liveData.innings.length - 1) && !matchFinished && (
+      <>
       {/* Render scorecard views */}
       {scorecardView === "team1_batting" && renderBattingScorecard(0)}
       {scorecardView === "team1_bowling" && renderBowlingScorecard(0)}
@@ -1077,6 +1316,7 @@ if (!liveData) {
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 }
